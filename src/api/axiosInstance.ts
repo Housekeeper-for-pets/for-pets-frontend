@@ -7,6 +7,12 @@ interface RetryableRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
+const isApiResponse = (data: unknown): data is ApiResponse<unknown> =>
+  typeof data === 'object' &&
+  data !== null &&
+  'success' in data &&
+  typeof (data as { success?: unknown }).success === 'boolean';
+
 // 백엔드 API 호출에 공통으로 사용할 axios 인스턴스입니다.
 export const axiosInstance = axios.create({
   baseURL: '/api',
@@ -34,13 +40,24 @@ axiosInstance.interceptors.response.use(
     const originalRequest = error.config as RetryableRequestConfig | undefined;
     const refreshToken = getRefreshToken();
 
+    if (error.response?.status !== 401) {
+      if (isApiResponse(error.response?.data)) {
+        return error.response;
+      }
+
+      return Promise.reject(error);
+    }
+
     if (
-      error.response?.status !== 401 ||
       !originalRequest ||
       originalRequest._retry ||
       !refreshToken ||
       originalRequest.url?.includes('/auth/reissue')
     ) {
+      if (isApiResponse(error.response.data)) {
+        return error.response;
+      }
+
       return Promise.reject(error);
     }
 
@@ -60,7 +77,7 @@ axiosInstance.interceptors.response.use(
 
       if (!response.data.success) {
         clearTokens();
-        return Promise.reject(error);
+        return error.response;
       }
 
       const { accessToken, refreshToken: nextRefreshToken } = response.data.data;
@@ -70,7 +87,7 @@ axiosInstance.interceptors.response.use(
       return axiosInstance(originalRequest);
     } catch {
       clearTokens();
-      return Promise.reject(error);
+      return error.response;
     }
   },
 );
