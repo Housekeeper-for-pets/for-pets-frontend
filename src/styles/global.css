@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+/* 전체 앱에 적용되는 기본 스타일입니다. */
+body {
+  margin: 0;
+  background-color: #faf6f1;
+  color: #2a2622;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}

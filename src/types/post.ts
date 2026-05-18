@@ -1,0 +1,43 @@
+import type {
+  CareType,
+  Id,
+  ISODateTimeString,
+  PageQuery,
+  TimeSlotRequest,
+  TimeSlotResponse,
+} from './common';
+import type { PetSnapshot } from './pet';
+
+export type PostStatus = 'OPEN' | 'CLOSED';
+
+export interface PostRequest {
+  title: string;
+  content: string;
+  region: string;
+  careType: CareType;
+  budgetAmount: number;
+  petIds: Id[];
+  timeSlots: TimeSlotRequest[];
+}
+
+export interface Post {
+  id: Id;
+  memberId: Id;
+  title: string;
+  content: string;
+  region: string;
+  careType: CareType;
+  budgetAmount: number;
+  status: PostStatus;
+  pets: PetSnapshot[];
+  timeSlots: TimeSlotResponse[];
+  createdAt?: ISODateTimeString;
+  updatedAt?: ISODateTimeString;
+}
+
+export interface PostSearchQuery extends PageQuery {
+  region?: string;
+  careType?: CareType;
+  status?: PostStatus;
+  keyword?: string;
+}
