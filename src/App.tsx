@@ -3,6 +3,8 @@ import AppLayout from './components/AppLayout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import PetsPage from './pages/PetsPage';
+import SitterDetailPage from './pages/SitterDetailPage';
+import SittersPage from './pages/SittersPage';
 import SignupPage from './pages/SignupPage';
 
 // 전체 페이지 라우팅을 관리하는 컴포넌트입니다.
@@ -12,6 +14,8 @@ function App() {
       <Route element={<AppLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/pets" element={<PetsPage />} />
+        <Route path="/sitters" element={<SittersPage />} />
+        <Route path="/sitters/:sitterId" element={<SitterDetailPage />} />
       </Route>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
