@@ -7,6 +7,7 @@ import LoginPage from './pages/LoginPage';
 import MyActivityPage from './pages/MyActivityPage';
 import MyProfilePage from './pages/MyProfilePage';
 import MySitterProfilePage from './pages/MySitterProfilePage';
+import NotFoundPage from './pages/NotFoundPage';
 import PetsPage from './pages/PetsPage';
 import PostCreatePage from './pages/PostCreatePage';
 import PostDetailPage from './pages/PostDetailPage';
@@ -40,6 +41,7 @@ function App() {
             element={<CareRequestCreatePage />}
           />
         </Route>
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
