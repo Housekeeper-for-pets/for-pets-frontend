@@ -240,6 +240,13 @@ function PostsPage() {
                 </span>
               ))}
             </div>
+
+            <Link
+              to={`/posts/${post.id}`}
+              className="mt-5 inline-flex w-full justify-center rounded-2xl bg-[#2A2622] px-4 py-3 text-sm font-bold text-white"
+            >
+              상세 보기
+            </Link>
           </article>
         ))}
       </section>

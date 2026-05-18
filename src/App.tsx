@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import PetsPage from './pages/PetsPage';
 import PostCreatePage from './pages/PostCreatePage';
+import PostDetailPage from './pages/PostDetailPage';
 import PostsPage from './pages/PostsPage';
 import SitterDetailPage from './pages/SitterDetailPage';
 import SittersPage from './pages/SittersPage';
@@ -19,6 +20,7 @@ function App() {
         <Route path="/pets" element={<PetsPage />} />
         <Route path="/posts" element={<PostsPage />} />
         <Route path="/posts/new" element={<PostCreatePage />} />
+        <Route path="/posts/:postId" element={<PostDetailPage />} />
         <Route path="/sitters" element={<SittersPage />} />
         <Route path="/sitters/:sitterId" element={<SitterDetailPage />} />
         <Route
