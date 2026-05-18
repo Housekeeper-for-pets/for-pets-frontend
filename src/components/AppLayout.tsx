@@ -1,4 +1,5 @@
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 const navItems = [
   { to: '/me', label: '내 정보' },
@@ -12,6 +13,14 @@ const navItems = [
 
 // 로그인 이후 주요 페이지에서 공통으로 사용하는 앱 레이아웃입니다.
 function AppLayout() {
+  const navigate = useNavigate();
+  const { isAuthenticated, signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/login');
+  };
+
   return (
     <div className="min-h-screen bg-[#FAF6F1] text-[#2A2622]">
       <header className="border-b border-[#E7DCD1] bg-white/90">
@@ -39,20 +48,30 @@ function AppLayout() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-2">
-            <Link
-              to="/login"
-              className="rounded-full px-4 py-2 text-sm font-semibold text-[#6F675F] hover:bg-[#F4E9DE]"
-            >
-              로그인
-            </Link>
-            <Link
-              to="/signup"
+          {isAuthenticated ? (
+            <button
+              type="button"
               className="rounded-full bg-[#2A2622] px-4 py-2 text-sm font-semibold text-white"
+              onClick={() => void handleLogout()}
             >
-              회원가입
-            </Link>
-          </div>
+              로그아웃
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                to="/login"
+                className="rounded-full px-4 py-2 text-sm font-semibold text-[#6F675F] hover:bg-[#F4E9DE]"
+              >
+                로그인
+              </Link>
+              <Link
+                to="/signup"
+                className="rounded-full bg-[#2A2622] px-4 py-2 text-sm font-semibold text-white"
+              >
+                회원가입
+              </Link>
+            </div>
+          )}
         </div>
       </header>
 
