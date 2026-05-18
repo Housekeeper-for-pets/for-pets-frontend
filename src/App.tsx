@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 import AppLayout from './components/AppLayout';
+import CareRequestCreatePage from './pages/CareRequestCreatePage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import PetsPage from './pages/PetsPage';
@@ -16,6 +17,10 @@ function App() {
         <Route path="/pets" element={<PetsPage />} />
         <Route path="/sitters" element={<SittersPage />} />
         <Route path="/sitters/:sitterId" element={<SitterDetailPage />} />
+        <Route
+          path="/sitters/:sitterId/requests/new"
+          element={<CareRequestCreatePage />}
+        />
       </Route>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
