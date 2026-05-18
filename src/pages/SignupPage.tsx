@@ -4,14 +4,20 @@ import { useNavigate } from 'react-router-dom';
 import { signup } from '../api';
 import AuthPageShell from '../components/AuthPageShell';
 import FormField from '../components/FormField';
-import type { SignupRequest } from '../types';
+import { regionOptions } from '../constants/options';
+import type { MemberGender, Region, SignupRequest } from '../types';
 
 const initialForm: SignupRequest = {
   email: '',
   password: '',
   nickname: '',
   phone: '',
+  gender: 'MALE',
+  region: 'UNKNOWN',
 };
+
+const selectClassName =
+  'mt-2 w-full rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm text-[#2A2622] outline-none transition focus:border-[#E26B4A] focus:ring-4 focus:ring-[#F7D8CC]';
 
 // 일반 회원 가입을 처리하는 페이지입니다.
 function SignupPage() {
@@ -99,6 +105,41 @@ function SignupPage() {
           value={form.phone}
           onChange={(event) => updateField('phone', event.target.value)}
         />
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="block" htmlFor="gender">
+            <span className="text-sm font-semibold text-[#3E3730]">성별</span>
+            <select
+              id="gender"
+              className={selectClassName}
+              value={form.gender}
+              onChange={(event) =>
+                updateField('gender', event.target.value as MemberGender)
+              }
+            >
+              <option value="MALE">남성</option>
+              <option value="FEMALE">여성</option>
+            </select>
+          </label>
+
+          <label className="block" htmlFor="region">
+            <span className="text-sm font-semibold text-[#3E3730]">지역</span>
+            <select
+              id="region"
+              className={selectClassName}
+              value={form.region}
+              onChange={(event) =>
+                updateField('region', event.target.value as Region)
+              }
+            >
+              {regionOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
         {errorMessage && (
           <p className="rounded-2xl bg-[#FFF0EA] px-4 py-3 text-sm font-medium text-[#B44727]">
