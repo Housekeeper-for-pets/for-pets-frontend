@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
@@ -18,10 +20,27 @@ const navGroups = ['매칭', '관리', '계정'];
 function AppLayout() {
   const navigate = useNavigate();
   const { isAuthenticated, signOut } = useAuth();
+  const [keyword, setKeyword] = useState('');
 
   const handleLogout = async () => {
     await signOut();
     navigate('/login');
+  };
+
+  const submitSearch = () => {
+    const nextKeyword = keyword.trim();
+
+    if (!nextKeyword) {
+      navigate('/posts');
+      return;
+    }
+
+    navigate(`/posts?keyword=${encodeURIComponent(nextKeyword)}`);
+  };
+
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    submitSearch();
   };
 
   return (
@@ -94,16 +113,26 @@ function AppLayout() {
               <div className="hidden min-w-0 flex-1 items-center gap-3 lg:flex">
                 <span className="text-xs font-bold text-[#B7AA9D]">홈</span>
                 <div className="h-4 w-px bg-[#E7DCD1]" />
-                <label className="relative w-full max-w-xs">
+                <form className="relative w-full max-w-xs" onSubmit={handleSearchSubmit}>
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#B7AA9D]">
                     ⌕
                   </span>
                   <input
                     className="h-9 w-full rounded-xl border border-[#EEE4DA] bg-[#F6EFE7] pl-8 pr-3 text-xs font-semibold text-[#2A2622] placeholder:text-[#B7AA9D]"
-                    placeholder="시터·공고 검색"
-                    readOnly
+                    placeholder="공고 검색"
+                    value={keyword}
+                    onChange={(event) => setKeyword(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        submitSearch();
+                      }
+                    }}
                   />
-                </label>
+                  <button type="submit" className="sr-only">
+                    검색
+                  </button>
+                </form>
               </div>
 
               <nav className="flex min-w-0 flex-1 gap-2 overflow-x-auto lg:hidden">

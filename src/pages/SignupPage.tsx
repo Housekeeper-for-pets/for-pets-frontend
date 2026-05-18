@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { signup } from '../api';
 import AuthPageShell from '../components/AuthPageShell';
 import FormField from '../components/FormField';
-import { regionOptions } from '../constants/options';
+import RegionSelect from '../components/RegionSelect';
 import type { MemberGender, Region, SignupRequest } from '../types';
 
 const initialForm: SignupRequest = {
@@ -106,7 +106,7 @@ function SignupPage() {
           onChange={(event) => updateField('phone', event.target.value)}
         />
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4">
           <label className="block" htmlFor="gender">
             <span className="text-sm font-semibold text-[#3E3730]">성별</span>
             <select
@@ -122,23 +122,13 @@ function SignupPage() {
             </select>
           </label>
 
-          <label className="block" htmlFor="region">
-            <span className="text-sm font-semibold text-[#3E3730]">지역</span>
-            <select
-              id="region"
-              className={selectClassName}
-              value={form.region}
-              onChange={(event) =>
-                updateField('region', event.target.value as Region)
-              }
-            >
-              {regionOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <RegionSelect
+            idPrefix="signup-region"
+            selectClassName={selectClassName}
+            value={form.region}
+            emptyValue="UNKNOWN"
+            onChange={(value) => updateField('region', (value ?? 'UNKNOWN') as Region)}
+          />
         </div>
 
         {errorMessage && (

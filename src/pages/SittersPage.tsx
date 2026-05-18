@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { searchSitters } from '../api';
+import RegionSelect from '../components/RegionSelect';
 import {
   getRegionLabel,
   possiblePetSizeLabels,
   possiblePetTypeLabels,
-  regionOptions,
   sitterStatusLabels,
 } from '../constants/options';
 import type {
@@ -113,29 +113,21 @@ function SittersPage() {
       </section>
 
       <form
-        className="mt-6 grid gap-3 rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm md:grid-cols-5"
+        className="mt-6 grid gap-3 rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm lg:grid-cols-[2fr_1fr_1fr_1fr_auto]"
         onSubmit={handleSubmit}
       >
-        <select
-          aria-label="지역"
-          className={selectClassName}
+        <RegionSelect
+          idPrefix="sitter-search-region"
+          selectClassName={selectClassName}
           value={query.region ?? ''}
-          onChange={(event) =>
+          allLabel="전체 지역"
+          onChange={(value) =>
             setQuery((prevQuery) => ({
               ...prevQuery,
-              region: event.target.value ? (event.target.value as Region) : undefined,
+              region: value as Region | undefined,
             }))
           }
-        >
-          <option value="">전체 지역</option>
-          {regionOptions
-            .filter((option) => option.value !== 'UNKNOWN')
-            .map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-        </select>
+        />
 
         <select
           aria-label="돌봄 가능한 동물"

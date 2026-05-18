@@ -6,7 +6,8 @@ import {
   getMyInfo,
   updateMyInfo,
 } from '../api';
-import { getRegionLabel, regionOptions } from '../constants/options';
+import RegionSelect from '../components/RegionSelect';
+import { getRegionLabel } from '../constants/options';
 import type {
   ChangePasswordRequest,
   Member,
@@ -249,7 +250,7 @@ function MyProfilePage() {
               />
             </label>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4">
               <label className="block" htmlFor="gender">
                 <span className="text-sm font-bold text-[#2A2622]">성별</span>
                 <select
@@ -268,26 +269,18 @@ function MyProfilePage() {
                 </select>
               </label>
 
-              <label className="block" htmlFor="region">
-                <span className="text-sm font-bold text-[#2A2622]">지역</span>
-                <select
-                  id="region"
-                  className={`mt-2 ${selectClassName}`}
-                  value={profileForm.region}
-                  onChange={(event) =>
-                    setProfileForm((prevForm) => ({
-                      ...prevForm,
-                      region: event.target.value as Region,
-                    }))
-                  }
-                >
-                  {regionOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <RegionSelect
+                idPrefix="profile-region"
+                selectClassName={`mt-2 ${selectClassName}`}
+                value={profileForm.region}
+                emptyValue="UNKNOWN"
+                onChange={(value) =>
+                  setProfileForm((prevForm) => ({
+                    ...prevForm,
+                    region: (value ?? 'UNKNOWN') as Region,
+                  }))
+                }
+              />
             </div>
           </div>
 

@@ -5,4 +5,12 @@ import tailwindcss from '@tailwindcss/vite';
 // Vite에서 React와 TailwindCSS를 사용하도록 설정합니다.
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
+  },
 });

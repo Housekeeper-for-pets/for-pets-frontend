@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { searchPosts } from '../api';
+import RegionSelect from '../components/RegionSelect';
 import {
   careTypeLabels,
   getRegionLabel,
   postStatusLabels,
-  regionOptions,
 } from '../constants/options';
 import type { CareType, Post, PostSearchQuery, PostStatus, Region } from '../types';
 
@@ -41,7 +41,12 @@ const buildQuery = (query: PostSearchQuery): PostSearchQuery => {
 
 // 공고 목록을 검색하고 열린 공고를 확인하는 페이지입니다.
 function PostsPage() {
-  const [query, setQuery] = useState<PostSearchQuery>(initialQuery);
+  const [searchParams] = useSearchParams();
+  const keywordFromUrl = searchParams.get('keyword') ?? undefined;
+  const [query, setQuery] = useState<PostSearchQuery>(() => ({
+    ...initialQuery,
+    keyword: keywordFromUrl,
+  }));
   const [posts, setPosts] = useState<Post[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,8 +75,14 @@ function PostsPage() {
   };
 
   useEffect(() => {
-    void fetchPosts(query);
-  }, []);
+    const nextQuery = {
+      ...initialQuery,
+      keyword: keywordFromUrl,
+    };
+
+    setQuery(nextQuery);
+    void fetchPosts(nextQuery);
+  }, [keywordFromUrl]);
 
   // 검색 폼 제출 시 첫 페이지 기준으로 공고 목록을 다시 조회합니다.
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -99,7 +110,7 @@ function PostsPage() {
       </section>
 
       <form
-        className="mt-6 grid gap-3 rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm md:grid-cols-[1fr_1fr_1fr_1fr_auto]"
+        className="mt-6 grid gap-3 rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm lg:grid-cols-[1fr_2fr_1fr_1fr_auto]"
         onSubmit={handleSubmit}
       >
         <input
@@ -112,26 +123,18 @@ function PostsPage() {
           }
         />
 
-        <select
-          aria-label="지역"
-          className={selectClassName}
+        <RegionSelect
+          idPrefix="post-search-region"
+          selectClassName={selectClassName}
           value={query.region ?? ''}
-          onChange={(event) =>
+          allLabel="전체 지역"
+          onChange={(value) =>
             setQuery((prevQuery) => ({
               ...prevQuery,
-              region: event.target.value ? (event.target.value as Region) : undefined,
+              region: value as Region | undefined,
             }))
           }
-        >
-          <option value="">전체 지역</option>
-          {regionOptions
-            .filter((option) => option.value !== 'UNKNOWN')
-            .map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-        </select>
+        />
 
         <select
           aria-label="돌봄 유형"

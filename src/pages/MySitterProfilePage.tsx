@@ -7,12 +7,12 @@ import {
   updateMySitterProfile,
   updateMySitterStatus,
 } from '../api';
+import RegionSelect from '../components/RegionSelect';
 import {
   dayOfWeekLabels,
   getRegionLabel,
   possiblePetSizeLabels,
   possiblePetTypeLabels,
-  regionOptions,
   sitterStatusLabels,
 } from '../constants/options';
 import type {
@@ -356,26 +356,18 @@ function MySitterProfilePage() {
 
           <div className="mt-6 grid gap-4">
             {profile && (
-              <label className="block" htmlFor="region">
-                <span className="text-sm font-bold text-[#2A2622]">활동 지역</span>
-                <select
-                  id="region"
-                  className={`mt-2 ${selectClassName}`}
-                  value={profileForm.region}
-                  onChange={(event) =>
-                    setProfileForm((prevForm) => ({
-                      ...prevForm,
-                      region: event.target.value as Region,
-                    }))
-                  }
-                >
-                  {regionOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <RegionSelect
+                idPrefix="sitter-profile-region"
+                selectClassName={`mt-2 ${selectClassName}`}
+                value={profileForm.region}
+                emptyValue="UNKNOWN"
+                onChange={(value) =>
+                  setProfileForm((prevForm) => ({
+                    ...prevForm,
+                    region: (value ?? 'UNKNOWN') as Region,
+                  }))
+                }
+              />
             )}
 
             {!profile && (
