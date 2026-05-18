@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 import AppLayout from './components/AppLayout';
+import ProtectedRoute from './components/ProtectedRoute';
 import CareRequestCreatePage from './pages/CareRequestCreatePage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
@@ -22,21 +23,23 @@ function App() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<HomePage />} />
-        <Route path="/me" element={<MyProfilePage />} />
-        <Route path="/activity" element={<MyActivityPage />} />
-        <Route path="/my-sitter" element={<MySitterProfilePage />} />
-        <Route path="/pets" element={<PetsPage />} />
-        <Route path="/posts" element={<PostsPage />} />
-        <Route path="/posts/new" element={<PostCreatePage />} />
-        <Route path="/posts/:postId" element={<PostDetailPage />} />
-        <Route path="/reservations" element={<ReservationsPage />} />
-        <Route path="/reservations/:reservationId" element={<ReservationDetailPage />} />
-        <Route path="/sitters" element={<SittersPage />} />
-        <Route path="/sitters/:sitterId" element={<SitterDetailPage />} />
-        <Route
-          path="/sitters/:sitterId/requests/new"
-          element={<CareRequestCreatePage />}
-        />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/me" element={<MyProfilePage />} />
+          <Route path="/activity" element={<MyActivityPage />} />
+          <Route path="/my-sitter" element={<MySitterProfilePage />} />
+          <Route path="/pets" element={<PetsPage />} />
+          <Route path="/posts" element={<PostsPage />} />
+          <Route path="/posts/new" element={<PostCreatePage />} />
+          <Route path="/posts/:postId" element={<PostDetailPage />} />
+          <Route path="/reservations" element={<ReservationsPage />} />
+          <Route path="/reservations/:reservationId" element={<ReservationDetailPage />} />
+          <Route path="/sitters" element={<SittersPage />} />
+          <Route path="/sitters/:sitterId" element={<SitterDetailPage />} />
+          <Route
+            path="/sitters/:sitterId/requests/new"
+            element={<CareRequestCreatePage />}
+          />
+        </Route>
       </Route>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />

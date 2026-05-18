@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import AuthPageShell from '../components/AuthPageShell';
 import FormField from '../components/FormField';
 import { useAuth } from '../hooks/useAuth';
@@ -14,6 +14,7 @@ const initialForm: LoginRequest = {
 // 이메일과 비밀번호로 로그인하는 페이지입니다.
 function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signIn } = useAuth();
   const [form, setForm] = useState<LoginRequest>(initialForm);
   const [errorMessage, setErrorMessage] = useState('');
@@ -34,7 +35,10 @@ function LoginPage() {
       const result = await signIn(form);
 
       if (result.success) {
-        navigate('/');
+        const from =
+          (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ??
+          '/';
+        navigate(from, { replace: true });
         return;
       }
 
