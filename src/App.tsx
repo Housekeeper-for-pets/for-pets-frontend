@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom';
 import AppLayout from './components/AppLayout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
+import PetsPage from './pages/PetsPage';
 import SignupPage from './pages/SignupPage';
 
 // 전체 페이지 라우팅을 관리하는 컴포넌트입니다.
@@ -10,6 +11,7 @@ function App() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<HomePage />} />
+        <Route path="/pets" element={<PetsPage />} />
       </Route>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
