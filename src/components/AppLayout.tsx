@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
 
 const navItems = [
+  { to: '/me', label: '내 정보' },
   { to: '/sitters', label: '시터 찾기' },
   { to: '/my-sitter', label: '내 시터' },
   { to: '/posts', label: '공고 보기' },
