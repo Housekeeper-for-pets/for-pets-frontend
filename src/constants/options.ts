@@ -1,10 +1,12 @@
 import type {
   CareType,
+  CareRequestStatus,
   DayOfWeek,
   PetSize,
   PetSpecies,
   PossiblePetSize,
   PossiblePetType,
+  ProposalStatus,
   PostStatus,
   Region,
   ReservationStatus,
@@ -78,6 +80,20 @@ export const careTypeLabels: Record<CareType, string> = {
 export const postStatusLabels: Record<PostStatus, string> = {
   OPEN: '모집 중',
   CLOSED: '마감',
+};
+
+export const careRequestStatusLabels: Record<CareRequestStatus, string> = {
+  PENDING: '대기 중',
+  ACCEPTED: '수락됨',
+  REJECTED: '거절됨',
+  CANCELED: '취소됨',
+};
+
+export const proposalStatusLabels: Record<ProposalStatus, string> = {
+  PENDING: '대기 중',
+  ACCEPTED: '수락됨',
+  REJECTED: '거절됨',
+  WITHDRAWN: '철회됨',
 };
 
 export const reservationStatusLabels: Record<ReservationStatus, string> = {

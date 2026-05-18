@@ -3,6 +3,7 @@ import AppLayout from './components/AppLayout';
 import CareRequestCreatePage from './pages/CareRequestCreatePage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
+import MyActivityPage from './pages/MyActivityPage';
 import MyProfilePage from './pages/MyProfilePage';
 import MySitterProfilePage from './pages/MySitterProfilePage';
 import PetsPage from './pages/PetsPage';
@@ -22,6 +23,7 @@ function App() {
       <Route element={<AppLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/me" element={<MyProfilePage />} />
+        <Route path="/activity" element={<MyActivityPage />} />
         <Route path="/my-sitter" element={<MySitterProfilePage />} />
         <Route path="/pets" element={<PetsPage />} />
         <Route path="/posts" element={<PostsPage />} />
