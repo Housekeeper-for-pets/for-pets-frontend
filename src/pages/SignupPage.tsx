@@ -9,8 +9,8 @@ import type { SignupRequest } from '../types';
 const initialForm: SignupRequest = {
   email: '',
   password: '',
-  name: '',
-  phoneNumber: '',
+  nickname: '',
+  phone: '',
 };
 
 // 일반 회원 가입을 처리하는 페이지입니다.
@@ -79,26 +79,25 @@ function SignupPage() {
           onChange={(event) => updateField('password', event.target.value)}
         />
         <FormField
-          id="name"
-          label="이름"
-          name="name"
+          id="nickname"
+          label="닉네임"
+          name="nickname"
           type="text"
-          autoComplete="name"
-          placeholder="홍길동"
+          autoComplete="nickname"
+          placeholder="집사민"
           required
-          value={form.name}
-          onChange={(event) => updateField('name', event.target.value)}
+          value={form.nickname}
+          onChange={(event) => updateField('nickname', event.target.value)}
         />
         <FormField
-          id="phoneNumber"
+          id="phone"
           label="전화번호"
-          name="phoneNumber"
+          name="phone"
           type="tel"
           autoComplete="tel"
           placeholder="010-0000-0000"
-          required
-          value={form.phoneNumber}
-          onChange={(event) => updateField('phoneNumber', event.target.value)}
+          value={form.phone}
+          onChange={(event) => updateField('phone', event.target.value)}
         />
 
         {errorMessage && (

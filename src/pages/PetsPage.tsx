@@ -10,21 +10,19 @@ const initialForm: PetRequest = {
   breed: '',
   gender: 'MALE',
   age: 1,
-  weight: 1,
   size: 'SMALL',
-  specialNotes: '',
+  profileImageUrl: '',
+  note: '',
 };
 
 const speciesOptions: Array<{ value: PetSpecies; label: string }> = [
   { value: 'DOG', label: '강아지' },
   { value: 'CAT', label: '고양이' },
-  { value: 'ETC', label: '기타' },
 ];
 
 const genderOptions: Array<{ value: PetGender; label: string }> = [
   { value: 'MALE', label: '수컷' },
   { value: 'FEMALE', label: '암컷' },
-  { value: 'UNKNOWN', label: '알 수 없음' },
 ];
 
 const sizeOptions: Array<{ value: PetSize; label: string }> = [
@@ -70,17 +68,14 @@ function PetsPage() {
 
   // 문자열 입력값을 반려동물 등록 요청 상태에 반영합니다.
   const updateTextField = (
-    name: keyof Pick<PetRequest, 'name' | 'breed' | 'specialNotes'>,
+    name: keyof Pick<PetRequest, 'name' | 'breed' | 'profileImageUrl' | 'note'>,
     value: string,
   ) => {
     setForm((prevForm) => ({ ...prevForm, [name]: value }));
   };
 
   // 숫자 입력값을 반려동물 등록 요청 상태에 반영합니다.
-  const updateNumberField = (
-    name: keyof Pick<PetRequest, 'age' | 'weight'>,
-    value: string,
-  ) => {
+  const updateNumberField = (name: keyof Pick<PetRequest, 'age'>, value: string) => {
     setForm((prevForm) => ({ ...prevForm, [name]: Number(value) }));
   };
 
@@ -156,33 +151,19 @@ function PetsPage() {
             id="breed"
             label="품종"
             type="text"
-            required
             placeholder="말티즈"
             value={form.breed}
             onChange={(event) => updateTextField('breed', event.target.value)}
           />
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField
-              id="age"
-              label="나이"
-              type="number"
-              min={0}
-              required
-              value={form.age}
-              onChange={(event) => updateNumberField('age', event.target.value)}
-            />
-            <FormField
-              id="weight"
-              label="몸무게(kg)"
-              type="number"
-              min={0}
-              step="0.1"
-              required
-              value={form.weight}
-              onChange={(event) => updateNumberField('weight', event.target.value)}
-            />
-          </div>
+          <FormField
+            id="age"
+            label="나이"
+            type="number"
+            min={0}
+            value={form.age}
+            onChange={(event) => updateNumberField('age', event.target.value)}
+          />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block" htmlFor="gender">
@@ -229,12 +210,23 @@ function PetsPage() {
           </div>
 
           <FormField
-            id="specialNotes"
+            id="profileImageUrl"
+            label="프로필 이미지 URL"
+            type="url"
+            placeholder="https://example.com/pet.png"
+            value={form.profileImageUrl}
+            onChange={(event) =>
+              updateTextField('profileImageUrl', event.target.value)
+            }
+          />
+
+          <FormField
+            id="note"
             label="특이사항"
             type="text"
             placeholder="알레르기, 성격, 주의사항 등"
-            value={form.specialNotes}
-            onChange={(event) => updateTextField('specialNotes', event.target.value)}
+            value={form.note}
+            onChange={(event) => updateTextField('note', event.target.value)}
           />
 
           {errorMessage && (
@@ -291,16 +283,18 @@ function PetsPage() {
                 <div>
                   <h3 className="text-lg font-bold text-[#2A2622]">{pet.name}</h3>
                   <p className="mt-1 text-sm text-[#6F675F]">
-                    {pet.breed} · {pet.age}살 · {pet.weight}kg
+                    {[pet.breed, pet.age ? `${pet.age}살` : null, pet.size]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </p>
                 </div>
                 <span className="rounded-full bg-[#F4E9DE] px-3 py-1 text-xs font-bold text-[#6F675F]">
                   {pet.species}
                 </span>
               </div>
-              {pet.specialNotes && (
+              {pet.note && (
                 <p className="mt-4 rounded-2xl bg-white px-4 py-3 text-sm leading-6 text-[#6F675F]">
-                  {pet.specialNotes}
+                  {pet.note}
                 </p>
               )}
             </article>

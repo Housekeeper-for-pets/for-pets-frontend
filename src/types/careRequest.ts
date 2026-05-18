@@ -1,4 +1,5 @@
 import type {
+  CareType,
   Id,
   ISODateTimeString,
   TimeSlotRequest,
@@ -9,18 +10,21 @@ import type { PetSnapshot } from './pet';
 export type CareRequestStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELED';
 
 export interface CareRequestCreateRequest {
-  message: string;
   petIds: Id[];
+  careType: CareType;
+  message?: string;
   timeSlots: TimeSlotRequest[];
 }
 
 export interface CareRequest {
   id: Id;
-  guardianId: Id;
-  sitterId: Id;
-  message: string;
+  memberId: Id;
+  sitterProfileId: Id;
+  careType: CareType;
+  message?: string;
   status: CareRequestStatus;
   pets: PetSnapshot[];
   timeSlots: TimeSlotResponse[];
   createdAt?: ISODateTimeString;
+  updatedAt?: ISODateTimeString;
 }

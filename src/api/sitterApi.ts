@@ -9,6 +9,7 @@ import type {
   SitterSchedule,
   SitterSearchQuery,
   UpdateSitterStatusRequest,
+  UpdateSitterProfileRequest,
 } from '../types';
 
 // 시터 프로필을 등록하고 회원 역할을 SITTER로 전환합니다.
@@ -50,7 +51,7 @@ export const getMySitterProfile = async () => {
 };
 
 // 현재 로그인한 사용자의 시터 프로필을 수정합니다.
-export const updateMySitterProfile = async (request: SitterProfileRequest) => {
+export const updateMySitterProfile = async (request: UpdateSitterProfileRequest) => {
   const response = await axiosInstance.put<ApiResponse<SitterProfile>>(
     '/sitters/me',
     request,

@@ -1,4 +1,5 @@
 import type { Id, ISODateTimeString, PageQuery, TimeString } from './common';
+import type { Region } from './member';
 import type { PetSize, PetSpecies } from './pet';
 
 export type PossiblePetType = PetSpecies | 'ALL';
@@ -17,24 +18,34 @@ export type DayOfWeek =
   | 'SUNDAY';
 
 export interface SitterProfileRequest {
-  region: string;
-  introduction: string;
+  introduction?: string;
   experienceYears: number;
   possiblePetType: PossiblePetType;
   possiblePetSize: PossiblePetSize;
   pricePerHour: number;
 }
 
-export interface SitterProfile extends SitterProfileRequest {
+export interface SitterProfile {
   id: Id;
   memberId: Id;
+  region: Region;
+  introduction?: string;
+  experienceYears: number;
+  possiblePetType: PossiblePetType;
+  possiblePetSize: PossiblePetSize;
+  pricePerHour: number;
   status: SitterProfileStatus;
-  reservationStatus?: SitterProfileStatus;
+  schedules: SitterSchedule[];
   createdAt?: ISODateTimeString;
+  updatedAt?: ISODateTimeString;
+}
+
+export interface UpdateSitterProfileRequest extends SitterProfileRequest {
+  region: Region;
 }
 
 export interface SitterSearchQuery extends PageQuery {
-  region?: string;
+  region?: Region;
   possiblePetType?: PossiblePetType;
   possiblePetSize?: PossiblePetSize;
   minPrice?: number;

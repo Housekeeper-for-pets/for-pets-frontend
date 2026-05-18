@@ -13,10 +13,9 @@ export type PostStatus = 'OPEN' | 'CLOSED';
 export interface PostRequest {
   title: string;
   content: string;
-  region: string;
+  petIds: Id[];
   careType: CareType;
   budgetAmount: number;
-  petIds: Id[];
   timeSlots: TimeSlotRequest[];
 }
 
