@@ -6,6 +6,7 @@ import type {
   TimeSlotRequest,
   TimeSlotResponse,
 } from './common';
+import type { Region } from './member';
 import type { PetSnapshot } from './pet';
 
 export type PostStatus = 'OPEN' | 'CLOSED';
@@ -24,7 +25,7 @@ export interface Post {
   memberId: Id;
   title: string;
   content: string;
-  region: string;
+  region: Region;
   careType: CareType;
   budgetAmount: number;
   status: PostStatus;
@@ -35,7 +36,7 @@ export interface Post {
 }
 
 export interface PostSearchQuery extends PageQuery {
-  region?: string;
+  region?: Region;
   careType?: CareType;
   status?: PostStatus;
   keyword?: string;

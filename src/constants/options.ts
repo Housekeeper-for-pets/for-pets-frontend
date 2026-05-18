@@ -1,9 +1,11 @@
 import type {
+  CareType,
   DayOfWeek,
   PetSize,
   PetSpecies,
   PossiblePetSize,
   PossiblePetType,
+  PostStatus,
   Region,
   SitterProfileStatus,
 } from '../types';
@@ -64,6 +66,16 @@ export const possiblePetSizeLabels: Record<PossiblePetSize, string> = {
 export const sitterStatusLabels: Record<SitterProfileStatus, string> = {
   RESERVABLE: '예약 가능',
   NON_RESERVABLE: '예약 불가',
+};
+
+export const careTypeLabels: Record<CareType, string> = {
+  VISIT: '방문 돌봄',
+  BOARDING: '위탁 돌봄',
+};
+
+export const postStatusLabels: Record<PostStatus, string> = {
+  OPEN: '모집 중',
+  CLOSED: '마감',
 };
 
 export const dayOfWeekLabels: Record<DayOfWeek, string> = {

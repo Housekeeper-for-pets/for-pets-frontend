@@ -4,6 +4,8 @@ import CareRequestCreatePage from './pages/CareRequestCreatePage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import PetsPage from './pages/PetsPage';
+import PostCreatePage from './pages/PostCreatePage';
+import PostsPage from './pages/PostsPage';
 import SitterDetailPage from './pages/SitterDetailPage';
 import SittersPage from './pages/SittersPage';
 import SignupPage from './pages/SignupPage';
@@ -15,6 +17,8 @@ function App() {
       <Route element={<AppLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/pets" element={<PetsPage />} />
+        <Route path="/posts" element={<PostsPage />} />
+        <Route path="/posts/new" element={<PostCreatePage />} />
         <Route path="/sitters" element={<SittersPage />} />
         <Route path="/sitters/:sitterId" element={<SitterDetailPage />} />
         <Route
