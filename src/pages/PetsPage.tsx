@@ -106,7 +106,7 @@ function PetsPage() {
 
   return (
     <main className="mx-auto grid max-w-6xl gap-6 px-6 py-8 lg:grid-cols-[0.9fr_1.1fr]">
-      <section className="rounded-[28px] border border-[#E7DCD1] bg-white p-6 shadow-sm">
+      <section className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
         <p className="text-sm font-bold text-[#E26B4A]">PET PROFILE</p>
         <h1 className="mt-3 text-2xl font-bold text-[#2A2622]">
           반려동물 등록
@@ -250,7 +250,7 @@ function PetsPage() {
         </form>
       </section>
 
-      <section className="rounded-[28px] border border-[#E7DCD1] bg-white p-6 shadow-sm">
+      <section className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
         <div className="flex items-end justify-between gap-4">
           <div>
             <p className="text-sm font-bold text-[#E26B4A]">MY PETS</p>

@@ -113,7 +113,7 @@ function SittersPage() {
       </section>
 
       <form
-        className="mt-6 grid gap-3 rounded-[28px] border border-[#E7DCD1] bg-white p-5 shadow-sm md:grid-cols-5"
+        className="mt-6 grid gap-3 rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm md:grid-cols-5"
         onSubmit={handleSubmit}
       >
         <select
@@ -208,13 +208,13 @@ function SittersPage() {
 
       <section className="mt-6 grid gap-4 md:grid-cols-2">
         {isLoading && (
-          <p className="rounded-[24px] bg-white p-5 text-sm text-[#6F675F] shadow-sm md:col-span-2">
+          <p className="rounded-2xl bg-white p-5 text-sm text-[#6F675F] shadow-sm md:col-span-2">
             시터 목록을 불러오는 중입니다.
           </p>
         )}
 
         {!isLoading && sitters.length === 0 && (
-          <p className="rounded-[24px] bg-white p-5 text-sm leading-6 text-[#6F675F] shadow-sm md:col-span-2">
+          <p className="rounded-2xl bg-white p-5 text-sm leading-6 text-[#6F675F] shadow-sm md:col-span-2">
             조건에 맞는 시터가 없습니다. 검색 조건을 조금 넓혀보세요.
           </p>
         )}
@@ -222,7 +222,7 @@ function SittersPage() {
         {sitters.map((sitter) => (
           <article
             key={sitter.id}
-            className="rounded-[24px] border border-[#E7DCD1] bg-white p-5 shadow-sm"
+            className="rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm"
           >
             <div className="flex items-start justify-between gap-4">
               <div>

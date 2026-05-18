@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 function NotFoundPage() {
   return (
     <main className="mx-auto flex min-h-[70vh] max-w-3xl items-center px-6 py-10">
-      <section className="w-full rounded-[28px] border border-[#E7DCD1] bg-white p-8 text-center shadow-sm">
+      <section className="w-full rounded-2xl border border-[#E7DCD1] bg-white p-8 text-center shadow-sm">
         <p className="text-sm font-bold text-[#E26B4A]">404</p>
         <h1 className="mt-3 text-3xl font-bold text-[#2A2622]">
           페이지를 찾을 수 없습니다

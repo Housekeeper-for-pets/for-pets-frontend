@@ -99,7 +99,7 @@ function PostsPage() {
       </section>
 
       <form
-        className="mt-6 grid gap-3 rounded-[28px] border border-[#E7DCD1] bg-white p-5 shadow-sm md:grid-cols-[1fr_1fr_1fr_1fr_auto]"
+        className="mt-6 grid gap-3 rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm md:grid-cols-[1fr_1fr_1fr_1fr_auto]"
         onSubmit={handleSubmit}
       >
         <input
@@ -185,13 +185,13 @@ function PostsPage() {
 
       <section className="mt-5 grid gap-4">
         {isLoading && (
-          <p className="rounded-[24px] bg-white p-5 text-sm text-[#6F675F] shadow-sm">
+          <p className="rounded-2xl bg-white p-5 text-sm text-[#6F675F] shadow-sm">
             공고 목록을 불러오는 중입니다.
           </p>
         )}
 
         {!isLoading && posts.length === 0 && (
-          <p className="rounded-[24px] bg-white p-5 text-sm leading-6 text-[#6F675F] shadow-sm">
+          <p className="rounded-2xl bg-white p-5 text-sm leading-6 text-[#6F675F] shadow-sm">
             조건에 맞는 공고가 없습니다.
           </p>
         )}
@@ -199,7 +199,7 @@ function PostsPage() {
         {posts.map((post) => (
           <article
             key={post.id}
-            className="rounded-[24px] border border-[#E7DCD1] bg-white p-5 shadow-sm"
+            className="rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm"
           >
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
               <div>

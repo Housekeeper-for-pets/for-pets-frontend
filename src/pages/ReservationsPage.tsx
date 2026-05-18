@@ -80,7 +80,7 @@ function ReservationsPage() {
       </section>
 
       <form
-        className="mt-6 grid gap-3 rounded-[28px] border border-[#E7DCD1] bg-white p-5 shadow-sm md:grid-cols-[1fr_1fr_auto]"
+        className="mt-6 grid gap-3 rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm md:grid-cols-[1fr_1fr_auto]"
         onSubmit={handleSubmit}
       >
         <select
@@ -132,13 +132,13 @@ function ReservationsPage() {
 
       <section className="mt-6 grid gap-4">
         {isLoading && (
-          <p className="rounded-[24px] bg-white p-5 text-sm text-[#6F675F] shadow-sm">
+          <p className="rounded-2xl bg-white p-5 text-sm text-[#6F675F] shadow-sm">
             예약 목록을 불러오는 중입니다.
           </p>
         )}
 
         {!isLoading && reservations.length === 0 && (
-          <p className="rounded-[24px] bg-white p-5 text-sm leading-6 text-[#6F675F] shadow-sm">
+          <p className="rounded-2xl bg-white p-5 text-sm leading-6 text-[#6F675F] shadow-sm">
             아직 예약이 없습니다.
           </p>
         )}
@@ -146,7 +146,7 @@ function ReservationsPage() {
         {reservations.map((reservation) => (
           <article
             key={reservation.id}
-            className="rounded-[24px] border border-[#E7DCD1] bg-white p-5 shadow-sm"
+            className="rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm"
           >
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
               <div>

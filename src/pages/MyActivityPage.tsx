@@ -180,7 +180,7 @@ function MyActivityPage() {
       )}
 
       {isLoading ? (
-        <p className="mt-6 rounded-[24px] bg-white p-5 text-sm text-[#6F675F] shadow-sm">
+        <p className="mt-6 rounded-2xl bg-white p-5 text-sm text-[#6F675F] shadow-sm">
           요청과 제안 목록을 불러오는 중입니다.
         </p>
       ) : (
@@ -317,7 +317,7 @@ function ActivitySection({ title, count, children }: ActivitySectionProps) {
 
 function EmptyMessage({ text }: { text: string }) {
   return (
-    <p className="rounded-[24px] bg-white p-5 text-sm leading-6 text-[#6F675F] shadow-sm">
+    <p className="rounded-2xl bg-white p-5 text-sm leading-6 text-[#6F675F] shadow-sm">
       {text}
     </p>
   );
@@ -331,7 +331,7 @@ interface CareRequestCardProps {
 // 돌봄 요청 카드입니다.
 function CareRequestCard({ request, actionArea }: CareRequestCardProps) {
   return (
-    <article className="rounded-[24px] border border-[#E7DCD1] bg-white p-5 shadow-sm">
+    <article className="rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
         <div>
           <span className="rounded-full bg-[#F4E9DE] px-3 py-1 text-xs font-bold text-[#6F675F]">
@@ -377,7 +377,7 @@ interface ProposalCardProps {
 // 시터가 공고에 등록한 제안 카드입니다.
 function ProposalCard({ proposal, actionArea }: ProposalCardProps) {
   return (
-    <article className="rounded-[24px] border border-[#E7DCD1] bg-white p-5 shadow-sm">
+    <article className="rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
         <div>
           <span className="rounded-full bg-[#F4E9DE] px-3 py-1 text-xs font-bold text-[#6F675F]">

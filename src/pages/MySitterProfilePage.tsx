@@ -303,7 +303,7 @@ function MySitterProfilePage() {
   if (isLoading) {
     return (
       <main className="mx-auto max-w-6xl px-6 py-8">
-        <p className="rounded-[24px] bg-white p-5 text-sm text-[#6F675F] shadow-sm">
+        <p className="rounded-2xl bg-white p-5 text-sm text-[#6F675F] shadow-sm">
           내 시터 프로필을 불러오는 중입니다.
         </p>
       </main>
@@ -344,7 +344,7 @@ function MySitterProfilePage() {
 
       <section className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.85fr]">
         <form
-          className="rounded-[28px] border border-[#E7DCD1] bg-white p-6 shadow-sm"
+          className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm"
           onSubmit={handleProfileSubmit}
         >
           <div>
@@ -491,7 +491,7 @@ function MySitterProfilePage() {
         </form>
 
         <aside className="grid gap-6">
-          <section className="rounded-[28px] border border-[#E7DCD1] bg-white p-6 shadow-sm">
+          <section className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
             <p className="text-sm font-bold text-[#E26B4A]">STATUS</p>
             <h2 className="mt-3 text-2xl font-bold text-[#2A2622]">
               예약 가능 상태
@@ -519,7 +519,7 @@ function MySitterProfilePage() {
             </div>
           </section>
 
-          <section className="rounded-[28px] border border-[#E7DCD1] bg-white p-6 shadow-sm">
+          <section className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
             <p className="text-sm font-bold text-[#E26B4A]">SUMMARY</p>
             <h2 className="mt-3 text-2xl font-bold text-[#2A2622]">프로필 요약</h2>
             {profile ? (
@@ -548,7 +548,7 @@ function MySitterProfilePage() {
       </section>
 
       <form
-        className="mt-6 rounded-[28px] border border-[#E7DCD1] bg-white p-6 shadow-sm"
+        className="mt-6 rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm"
         onSubmit={handleScheduleSubmit}
       >
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
