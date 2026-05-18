@@ -7,6 +7,8 @@ import type {
   PossiblePetType,
   PostStatus,
   Region,
+  ReservationStatus,
+  CancelCategory,
   SitterProfileStatus,
 } from '../types';
 
@@ -76,6 +78,21 @@ export const careTypeLabels: Record<CareType, string> = {
 export const postStatusLabels: Record<PostStatus, string> = {
   OPEN: '모집 중',
   CLOSED: '마감',
+};
+
+export const reservationStatusLabels: Record<ReservationStatus, string> = {
+  PENDING: '대기 중',
+  CONFIRMED: '확정됨',
+  COMPLETED: '완료됨',
+  CANCELED: '취소됨',
+  EXPIRED: '만료됨',
+};
+
+export const cancelCategoryLabels: Record<CancelCategory, string> = {
+  PERSONAL: '개인 사정',
+  SCHEDULE_CHANGE: '일정 변경',
+  EMERGENCY: '긴급 상황',
+  OTHER: '기타',
 };
 
 export const dayOfWeekLabels: Record<DayOfWeek, string> = {

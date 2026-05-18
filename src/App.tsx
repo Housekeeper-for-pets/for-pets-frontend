@@ -7,6 +7,8 @@ import PetsPage from './pages/PetsPage';
 import PostCreatePage from './pages/PostCreatePage';
 import PostDetailPage from './pages/PostDetailPage';
 import PostsPage from './pages/PostsPage';
+import ReservationDetailPage from './pages/ReservationDetailPage';
+import ReservationsPage from './pages/ReservationsPage';
 import SitterDetailPage from './pages/SitterDetailPage';
 import SittersPage from './pages/SittersPage';
 import SignupPage from './pages/SignupPage';
@@ -21,6 +23,8 @@ function App() {
         <Route path="/posts" element={<PostsPage />} />
         <Route path="/posts/new" element={<PostCreatePage />} />
         <Route path="/posts/:postId" element={<PostDetailPage />} />
+        <Route path="/reservations" element={<ReservationsPage />} />
+        <Route path="/reservations/:reservationId" element={<ReservationDetailPage />} />
         <Route path="/sitters" element={<SittersPage />} />
         <Route path="/sitters/:sitterId" element={<SitterDetailPage />} />
         <Route
