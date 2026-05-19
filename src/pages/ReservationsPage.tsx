@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { getMyReservations } from '../api';
 import { careTypeLabels, reservationStatusLabels } from '../constants/options';
 import type { Reservation, ReservationSearchQuery, ReservationStatus } from '../types';
@@ -15,8 +15,13 @@ const initialQuery: ReservationSearchQuery = {
 const selectClassName =
   'w-full rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm text-[#2A2622] outline-none transition focus:border-[#E26B4A] focus:ring-4 focus:ring-[#F7D8CC]';
 
-const buildQuery = (query: ReservationSearchQuery): ReservationSearchQuery => {
-  const nextQuery: ReservationSearchQuery = {
+type ReservationFilter = ReservationStatus | 'ACTIVE';
+type ReservationViewQuery = Omit<ReservationSearchQuery, 'status'> & {
+  status?: ReservationFilter;
+};
+
+const buildQuery = (query: ReservationViewQuery): ReservationViewQuery => {
+  const nextQuery: ReservationViewQuery = {
     page: 0,
     size: query.size,
     sort: query.sort,
@@ -48,16 +53,37 @@ const getPaymentLabel = (reservation: Reservation) => {
   return '결제 대기';
 };
 
+const filterReservations = (
+  reservations: Reservation[],
+  status?: ReservationFilter,
+) => {
+  if (status === 'ACTIVE') {
+    return reservations.filter((reservation) =>
+      ['PENDING', 'CONFIRMED'].includes(reservation.status),
+    );
+  }
+
+  return status
+    ? reservations.filter((reservation) => reservation.status === status)
+    : reservations;
+};
+
 // 로그인한 사용자의 예약 목록을 조회하고 상태별로 필터링하는 페이지입니다.
 function ReservationsPage() {
-  const [query, setQuery] = useState<ReservationSearchQuery>(initialQuery);
+  const [searchParams] = useSearchParams();
+  const initialStatus =
+    searchParams.get('scope') === 'active' ? 'ACTIVE' : initialQuery.status;
+  const [query, setQuery] = useState<ReservationViewQuery>({
+    ...initialQuery,
+    status: initialStatus,
+  });
   const [allReservations, setAllReservations] = useState<Reservation[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const fetchReservations = async (nextQuery: ReservationSearchQuery) => {
+  const fetchReservations = async (nextQuery: ReservationViewQuery) => {
     setIsLoading(true);
     setErrorMessage('');
 
@@ -66,9 +92,7 @@ function ReservationsPage() {
 
       if (result.success) {
         const nextReservations = sortReservations(
-          nextQuery.status
-            ? result.data.filter((reservation) => reservation.status === nextQuery.status)
-            : result.data,
+          filterReservations(result.data, nextQuery.status),
           nextQuery.sort,
         );
 
@@ -88,20 +112,18 @@ function ReservationsPage() {
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
-      void fetchReservations(initialQuery);
+      void fetchReservations({ ...initialQuery, status: initialStatus });
     }, 0);
 
     return () => window.clearTimeout(timerId);
-  }, []);
+  }, [initialStatus]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const nextQuery = buildQuery(query);
     const nextReservations = sortReservations(
       nextQuery.status
-        ? allReservations.filter(
-            (reservation) => reservation.status === nextQuery.status,
-          )
+        ? filterReservations(allReservations, nextQuery.status)
         : allReservations,
       nextQuery.sort,
     );
@@ -138,12 +160,13 @@ function ReservationsPage() {
             setQuery((prevQuery) => ({
               ...prevQuery,
               status: event.target.value
-                ? (event.target.value as ReservationStatus)
+                ? (event.target.value as ReservationFilter)
                 : undefined,
             }))
           }
         >
           <option value="">전체 상태</option>
+          <option value="ACTIVE">진행중(PENDING+CONFIRMED)</option>
           {Object.entries(reservationStatusLabels).map(([value, label]) => (
             <option key={value} value={value}>
               {label}

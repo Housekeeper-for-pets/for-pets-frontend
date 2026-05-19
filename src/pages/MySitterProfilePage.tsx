@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   createSitterProfile,
+  deleteMySitterProfile,
   getMySitterProfile,
   replaceMySitterSchedules,
   updateMySitterProfile,
@@ -56,6 +58,7 @@ const possiblePetTypeOptions: Array<{ value: PossiblePetType; label: string }> =
   { value: 'ALL', label: '모두 가능' },
   { value: 'DOG', label: '강아지' },
   { value: 'CAT', label: '고양이' },
+  { value: 'ETC', label: '기타' },
 ];
 
 const possiblePetSizeOptions: Array<{ value: PossiblePetSize; label: string }> = [
@@ -79,8 +82,18 @@ const toProfileForm = (profile: SitterProfile): SitterProfileForm => ({
   pricePerHour: profile.pricePerHour,
 });
 
+type SitterMode = 'summary' | 'register' | 'detail' | 'edit';
+
+const getMode = (value: string | null): SitterMode => {
+  if (value === 'register' || value === 'detail' || value === 'edit') return value;
+
+  return 'summary';
+};
+
 // 내 시터 프로필과 가능 시간을 등록/수정하는 페이지입니다.
 function MySitterProfilePage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const mode = getMode(searchParams.get('mode'));
   const [profile, setProfile] = useState<SitterProfile | null>(null);
   const [profileForm, setProfileForm] =
     useState<SitterProfileForm>(initialProfileForm);
@@ -90,6 +103,7 @@ function MySitterProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingSchedules, setIsSavingSchedules] = useState(false);
+  const [isDeletingProfile, setIsDeletingProfile] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -203,6 +217,7 @@ function MySitterProfilePage() {
         setSuccessMessage(
           profile ? '시터 프로필이 수정되었습니다.' : '시터 프로필이 등록되었습니다.',
         );
+        setSearchParams({ mode: 'summary' });
         return;
       }
 
@@ -211,6 +226,35 @@ function MySitterProfilePage() {
       setErrorMessage('시터 프로필 저장 중 문제가 발생했습니다.');
     } finally {
       setIsSavingProfile(false);
+    }
+  };
+
+  const handleDeleteProfile = async () => {
+    const shouldDelete = window.confirm('시터 프로필 등록을 취소할까요?');
+
+    if (!shouldDelete) return;
+
+    setErrorMessage('');
+    setSuccessMessage('');
+    setIsDeletingProfile(true);
+
+    try {
+      const result = await deleteMySitterProfile();
+
+      if (result.success) {
+        setProfile(null);
+        setProfileForm(initialProfileForm);
+        setSchedules([initialScheduleForm]);
+        setSearchParams({ mode: 'register' });
+        setSuccessMessage('시터 프로필이 삭제되었습니다.');
+        return;
+      }
+
+      setErrorMessage(result.error.message);
+    } catch {
+      setErrorMessage('시터 프로필 삭제 중 문제가 발생했습니다.');
+    } finally {
+      setIsDeletingProfile(false);
     }
   };
 
@@ -342,17 +386,161 @@ function MySitterProfilePage() {
         </p>
       )}
 
-      <section className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.85fr]">
-        <form
-          className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm"
-          onSubmit={handleProfileSubmit}
-        >
-          <div>
-            <p className="text-sm font-bold text-[#E26B4A]">PROFILE</p>
-            <h2 className="mt-3 text-2xl font-bold text-[#2A2622]">
-              {profile ? '프로필 수정' : '프로필 등록'}
-            </h2>
+      {mode === 'summary' && profile && (
+        <section className="mt-6 grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
+          <article className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
+            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+              <div>
+                <p className="text-sm font-bold text-[#E26B4A]">SUMMARY</p>
+                <h2 className="mt-3 text-2xl font-bold text-[#2A2622]">
+                  시터 프로필 요약
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSearchParams({ mode: 'detail' })}
+                className="rounded-2xl bg-[#2A2622] px-4 py-2 text-sm font-bold text-white"
+              >
+                상세보기
+              </button>
+            </div>
+            <dl className="mt-6 grid gap-3 md:grid-cols-2">
+              <div className="rounded-2xl bg-[#FAF6F1] p-4">
+                <dt className="text-xs font-bold text-[#9B8E82]">활동 지역</dt>
+                <dd className="mt-1 text-sm font-bold text-[#2A2622]">
+                  {getRegionLabel(profile.region)}
+                </dd>
+              </div>
+              <div className="rounded-2xl bg-[#FAF6F1] p-4">
+                <dt className="text-xs font-bold text-[#9B8E82]">시간당 요금</dt>
+                <dd className="mt-1 text-sm font-bold text-[#2A2622]">
+                  {profile.pricePerHour.toLocaleString('ko-KR')}원
+                </dd>
+              </div>
+            </dl>
+          </article>
+
+          <aside className="grid gap-4">
+            <section className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
+              <p className="text-sm font-bold text-[#E26B4A]">STATUS</p>
+              <h2 className="mt-3 text-xl font-bold text-[#2A2622]">
+                예약 가능 상태
+              </h2>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  disabled={profile.status === 'RESERVABLE'}
+                  onClick={() => void handleStatusChange('RESERVABLE')}
+                  className="rounded-2xl bg-[#E26B4A] px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#D8B6A9]"
+                >
+                  예약 가능
+                </button>
+                <button
+                  type="button"
+                  disabled={profile.status === 'NON_RESERVABLE'}
+                  onClick={() => void handleStatusChange('NON_RESERVABLE')}
+                  className="rounded-2xl bg-[#2A2622] px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#B0A59A]"
+                >
+                  예약 불가
+                </button>
+              </div>
+            </section>
+            <Link
+              to="/reservations?scope=active"
+              className="rounded-2xl border border-[#E7DCD1] bg-white px-5 py-4 text-center text-sm font-bold text-[#2A2622] shadow-sm"
+            >
+              진행중인 예약 조회
+            </Link>
+          </aside>
+        </section>
+      )}
+
+      {mode === 'summary' && !profile && (
+        <section className="mt-6 rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
+          <p className="text-sm font-bold text-[#E26B4A]">NO SITTER PROFILE</p>
+          <h2 className="mt-3 text-2xl font-bold text-[#2A2622]">
+            아직 시터 프로필이 없습니다.
+          </h2>
+          <button
+            type="button"
+            onClick={() => setSearchParams({ mode: 'register' })}
+            className="mt-6 rounded-2xl bg-[#E26B4A] px-5 py-3 text-sm font-bold text-white"
+          >
+            시터 등록
+          </button>
+        </section>
+      )}
+
+      {mode === 'detail' && profile && (
+        <section className="mt-6 rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+            <div>
+              <p className="text-sm font-bold text-[#E26B4A]">DETAIL</p>
+              <h2 className="mt-3 text-2xl font-bold text-[#2A2622]">
+                시터 프로필 상세
+              </h2>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setSearchParams({ mode: 'summary' })}
+                className="rounded-2xl border border-[#E7DCD1] px-4 py-2 text-sm font-bold text-[#6F675F]"
+              >
+                요약으로
+              </button>
+              <button
+                type="button"
+                onClick={() => setSearchParams({ mode: 'edit' })}
+                className="rounded-2xl bg-[#E26B4A] px-4 py-2 text-sm font-bold text-white"
+              >
+                프로필 수정
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingProfile}
+                onClick={() => void handleDeleteProfile()}
+                className="rounded-2xl border border-[#E7DCD1] px-4 py-2 text-sm font-bold text-[#B44727]"
+              >
+                시터 등록 취소
+              </button>
+            </div>
           </div>
+          <dl className="mt-6 grid gap-3 md:grid-cols-2">
+            {[
+              ['활동 지역', getRegionLabel(profile.region)],
+              ['경력', `${profile.experienceYears}년`],
+              ['가능 동물', possiblePetTypeLabels[profile.possiblePetType]],
+              ['가능 크기', possiblePetSizeLabels[profile.possiblePetSize]],
+              ['시간당 요금', `${profile.pricePerHour.toLocaleString('ko-KR')}원`],
+              ['예약 상태', sitterStatusLabels[profile.status]],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-2xl bg-[#FAF6F1] p-4">
+                <dt className="text-xs font-bold text-[#9B8E82]">{label}</dt>
+                <dd className="mt-1 text-sm font-bold text-[#2A2622]">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          {profile.introduction && (
+            <p className="mt-5 rounded-2xl bg-[#FAF6F1] p-4 text-sm leading-6 text-[#6F675F]">
+              {profile.introduction}
+            </p>
+          )}
+        </section>
+      )}
+
+      {(mode === 'register' || mode === 'edit') && (
+        <>
+          <section className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.85fr]">
+            <form
+              className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm"
+              onSubmit={handleProfileSubmit}
+            >
+              <div>
+                <p className="text-sm font-bold text-[#E26B4A]">PROFILE</p>
+                <h2 className="mt-3 text-2xl font-bold text-[#2A2622]">
+                  {profile ? '프로필 수정' : '프로필 등록'}
+                </h2>
+              </div>
 
           <div className="mt-6 grid gap-4">
             {profile && (
@@ -619,6 +807,8 @@ function MySitterProfilePage() {
           {isSavingSchedules ? '저장 중...' : '가능 시간 저장'}
         </button>
       </form>
+      </>
+      )}
     </main>
   );
 }
