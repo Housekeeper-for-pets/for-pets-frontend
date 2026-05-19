@@ -87,7 +87,11 @@ function SittersPage() {
   };
 
   useEffect(() => {
-    void fetchSitters(query);
+    const timerId = window.setTimeout(() => {
+      void fetchSitters(initialQuery);
+    }, 0);
+
+    return () => window.clearTimeout(timerId);
   }, []);
 
   // 검색 폼을 제출하면 첫 페이지 기준으로 목록을 다시 조회합니다.

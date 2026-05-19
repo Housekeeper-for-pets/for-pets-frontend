@@ -75,13 +75,16 @@ function PostsPage() {
   };
 
   useEffect(() => {
-    const nextQuery = {
+    const nextQuery: PostSearchQuery = {
       ...initialQuery,
       keyword: keywordFromUrl,
     };
+    const timerId = window.setTimeout(() => {
+      setQuery(nextQuery);
+      void fetchPosts(nextQuery);
+    }, 0);
 
-    setQuery(nextQuery);
-    void fetchPosts(nextQuery);
+    return () => window.clearTimeout(timerId);
   }, [keywordFromUrl]);
 
   // 검색 폼 제출 시 첫 페이지 기준으로 공고 목록을 다시 조회합니다.

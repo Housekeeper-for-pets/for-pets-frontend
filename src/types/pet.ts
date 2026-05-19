@@ -1,8 +1,8 @@
 import type { Id, ISODateTimeString } from './common';
 
-export type PetSpecies = 'DOG' | 'CAT';
+export type PetSpecies = 'DOG' | 'CAT' | 'ETC';
 
-export type PetGender = 'MALE' | 'FEMALE';
+export type PetGender = 'MALE' | 'FEMALE' | 'UNKNOWN';
 
 export type PetSize = 'SMALL' | 'MEDIUM' | 'LARGE';
 

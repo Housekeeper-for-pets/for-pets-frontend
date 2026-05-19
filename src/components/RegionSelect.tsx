@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { regionGroups } from '../constants/options';
 import type { Region } from '../types';
 
@@ -33,16 +33,11 @@ function RegionSelect({
   helperText = '현재 백엔드 지원 지역은 서울특별시 25개 구입니다.',
 }: RegionSelectProps) {
   const selectedGroup = findSelectedGroup(value);
-  const [selectedGroupLabel, setSelectedGroupLabel] = useState(
-    selectedGroup?.label ?? '',
-  );
+  const [pendingGroupLabel, setPendingGroupLabel] = useState('');
+  const selectedGroupLabel = selectedGroup?.label ?? pendingGroupLabel;
   const currentGroup =
     selectableRegionGroups.find((group) => group.label === selectedGroupLabel) ??
     selectedGroup;
-
-  useEffect(() => {
-    setSelectedGroupLabel(selectedGroup?.label ?? '');
-  }, [selectedGroup?.label]);
 
   return (
     <div className="grid gap-3 md:grid-cols-2">
@@ -53,7 +48,7 @@ function RegionSelect({
           className={selectClassName}
           value={selectedGroupLabel}
           onChange={(event) => {
-            setSelectedGroupLabel(event.target.value);
+            setPendingGroupLabel(event.target.value);
 
             if (!event.target.value) {
               onChange(emptyValue);

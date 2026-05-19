@@ -79,7 +79,11 @@ function MyActivityPage() {
   };
 
   useEffect(() => {
-    void fetchActivities();
+    const timerId = window.setTimeout(() => {
+      void fetchActivities();
+    }, 0);
+
+    return () => window.clearTimeout(timerId);
   }, []);
 
   const updateCareRequest = (updatedRequest: CareRequest) => {

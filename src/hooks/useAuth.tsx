@@ -51,6 +51,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 }
 
 // 컴포넌트에서 인증 상태와 로그인/로그아웃 동작을 사용할 때 호출합니다.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext);
 

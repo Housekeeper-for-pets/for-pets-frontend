@@ -368,6 +368,7 @@ export const regionOptions: Array<{ value: string; label: string }> = [
 export const petSpeciesLabels: Record<PetSpecies, string> = {
   DOG: '강아지',
   CAT: '고양이',
+  ETC: '기타',
 };
 
 export const petSizeLabels: Record<PetSize, string> = {
@@ -379,6 +380,7 @@ export const petSizeLabels: Record<PetSize, string> = {
 export const possiblePetTypeLabels: Record<PossiblePetType, string> = {
   DOG: '강아지',
   CAT: '고양이',
+  ETC: '기타',
   ALL: '모두 가능',
 };
 

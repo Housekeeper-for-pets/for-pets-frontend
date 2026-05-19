@@ -79,7 +79,11 @@ function ReservationsPage() {
   };
 
   useEffect(() => {
-    void fetchReservations(query);
+    const timerId = window.setTimeout(() => {
+      void fetchReservations(initialQuery);
+    }, 0);
+
+    return () => window.clearTimeout(timerId);
   }, []);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
