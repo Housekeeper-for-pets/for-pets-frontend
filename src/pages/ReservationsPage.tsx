@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { getMyReservations } from '../api';
-import { reservationStatusLabels } from '../constants/options';
+import { careTypeLabels, reservationStatusLabels } from '../constants/options';
 import type { Reservation, ReservationSearchQuery, ReservationStatus } from '../types';
 
 const initialQuery: ReservationSearchQuery = {
@@ -38,6 +38,13 @@ const sortReservations = (
 
     return secondTime - firstTime;
   });
+};
+
+const getPaymentLabel = (reservation: Reservation) => {
+  if (reservation.guardianPaid && reservation.sitterPaid) return '결제 완료';
+  if (reservation.guardianPaid || reservation.sitterPaid) return '한쪽 결제 완료';
+
+  return '결제 대기';
 };
 
 // 로그인한 사용자의 예약 목록을 조회하고 상태별로 필터링하는 페이지입니다.
@@ -198,6 +205,10 @@ function ReservationsPage() {
                 <p className="mt-2 text-sm text-[#6F675F]">
                   보호자 {reservation.guardianId} · 시터 프로필{' '}
                   {reservation.sitterProfileId}
+                </p>
+                <p className="mt-2 text-sm font-semibold text-[#8A8178]">
+                  {careTypeLabels[reservation.careType]} · {getPaymentLabel(reservation)}
+                  {reservation.source ? ` · ${reservation.source}` : ''}
                 </p>
               </div>
 

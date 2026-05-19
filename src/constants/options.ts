@@ -431,7 +431,7 @@ export const reservationStatusLabels: Record<ReservationStatus, string> = {
 export const cancelCategoryLabels: Record<CancelCategory, string> = {
   PERSONAL: '개인 사정',
   SCHEDULE_CHANGE: '일정 변경',
-  EMERGENCY: '긴급 상황',
+  UNAVOIDABLE: '불가피한 사유',
   OTHER: '기타',
 };
 

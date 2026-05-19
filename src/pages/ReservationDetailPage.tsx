@@ -9,6 +9,7 @@ import {
 } from '../api';
 import {
   cancelCategoryLabels,
+  careTypeLabels,
   reservationStatusLabels,
 } from '../constants/options';
 import type {
@@ -16,7 +17,6 @@ import type {
   CancelReservationRequest,
   ApiResponse,
   Reservation,
-  ReservationStatus,
 } from '../types';
 
 const initialCancelForm: CancelReservationRequest = {
@@ -26,6 +26,22 @@ const initialCancelForm: CancelReservationRequest = {
 
 const inputClassName =
   'w-full rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm text-[#2A2622] outline-none transition placeholder:text-[#B0A59A] focus:border-[#E26B4A] focus:ring-4 focus:ring-[#F7D8CC]';
+
+const getPaymentLabel = (reservation: Reservation) => {
+  if (reservation.guardianPaid && reservation.sitterPaid) {
+    return '양측 결제 완료';
+  }
+
+  if (reservation.guardianPaid) {
+    return '시터 결제 대기';
+  }
+
+  if (reservation.sitterPaid) {
+    return '보호자 결제 대기';
+  }
+
+  return '양측 결제 대기';
+};
 
 // 예약 상세 정보와 확정/완료/취소 액션을 제공하는 페이지입니다.
 function ReservationDetailPage() {
@@ -37,12 +53,6 @@ function ReservationDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [actionMessage, setActionMessage] = useState('');
-
-  const updateReservationStatus = (status: ReservationStatus) => {
-    setReservation((prevReservation) =>
-      prevReservation ? { ...prevReservation, status } : prevReservation,
-    );
-  };
 
   useEffect(() => {
     const fetchReservation = async () => {
@@ -71,8 +81,8 @@ function ReservationDetailPage() {
     void fetchReservation();
   }, [reservationId]);
 
-  const runReservationAction = async <T extends { status: ReservationStatus }>(
-    action: () => Promise<ApiResponse<T>>,
+  const runReservationAction = async (
+    action: () => Promise<ApiResponse<Reservation>>,
     successMessage: string,
   ) => {
     setErrorMessage('');
@@ -83,7 +93,7 @@ function ReservationDetailPage() {
       const result = await action();
 
       if (result.success && result.data) {
-        updateReservationStatus(result.data.status);
+        setReservation(result.data);
         setActionMessage(successMessage);
         return;
       }
@@ -100,7 +110,7 @@ function ReservationDetailPage() {
     if (!reservation) return;
     void runReservationAction(
       () => confirmReservation(reservation.id),
-      '예약이 확정되었습니다.',
+      '결제 확인이 반영되었습니다. 양측이 모두 확인하면 예약이 확정됩니다.',
     );
   };
 
@@ -164,7 +174,7 @@ function ReservationDetailPage() {
               </h1>
               <p className="mt-3 text-sm leading-6 text-[#6F675F]">
                 보호자 {reservation.guardianId} · 시터 프로필{' '}
-                {reservation.sitterProfileId}
+                {reservation.sitterProfileId} · {careTypeLabels[reservation.careType]}
               </p>
             </div>
             <span className="w-fit rounded-full bg-[#F4E9DE] px-3 py-1 text-xs font-bold text-[#6F675F]">
@@ -176,13 +186,7 @@ function ReservationDetailPage() {
             <div className="rounded-2xl bg-[#FAF6F1] p-4">
               <dt className="text-xs font-bold text-[#9B8E82]">결제 상태</dt>
               <dd className="mt-2 text-lg font-bold text-[#2A2622]">
-                {reservation.guardianPaid && reservation.sitterPaid
-                  ? '양측 완료'
-                  : reservation.guardianPaid
-                    ? '시터 대기'
-                    : reservation.sitterPaid
-                      ? '보호자 대기'
-                      : '결제 대기'}
+                {getPaymentLabel(reservation)}
               </dd>
             </div>
             <div className="rounded-2xl bg-[#FAF6F1] p-4">
@@ -210,7 +214,7 @@ function ReservationDetailPage() {
               onClick={handleConfirm}
               className="rounded-2xl bg-[#E26B4A] px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#D8B6A9]"
             >
-              예약 확정
+              결제 확인
             </button>
             <button
               type="button"

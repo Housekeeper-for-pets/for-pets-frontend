@@ -16,7 +16,7 @@ export type ReservationStatus =
 
 export type ReservationSource = 'CARE_REQUEST' | 'PROPOSAL';
 
-export type CancelCategory = 'PERSONAL' | 'SCHEDULE_CHANGE' | 'EMERGENCY' | 'OTHER';
+export type CancelCategory = 'PERSONAL' | 'SCHEDULE_CHANGE' | 'UNAVOIDABLE' | 'OTHER';
 
 export type CanceledBy = 'GUARDIAN' | 'SITTER';
 
@@ -31,7 +31,7 @@ export interface Reservation {
   sitterProfileId: Id;
   careType: CareType;
   status: ReservationStatus;
-  source?: ReservationSource;
+  source: ReservationSource;
   guardianPaid?: boolean;
   sitterPaid?: boolean;
   cancelReason?: string | null;
@@ -47,25 +47,7 @@ export interface Reservation {
   updatedAt?: ISODateTimeString;
 }
 
-export interface ReservationStatusResponse {
-  id: Id;
-  status: ReservationStatus;
-  guardianPaid?: boolean;
-  sitterPaid?: boolean;
-  confirmedAt?: ISODateTimeString;
-  completedAt?: ISODateTimeString;
-}
-
 export interface CancelReservationRequest {
   cancelReason: string;
   cancelCategory: CancelCategory;
-}
-
-export interface CancelReservationResponse {
-  id: Id;
-  status: 'CANCELED';
-  cancelReason: string;
-  cancelCategory: CancelCategory;
-  canceledBy: CanceledBy;
-  canceledAt: ISODateTimeString;
 }
