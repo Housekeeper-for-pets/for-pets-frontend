@@ -13,7 +13,7 @@ function BrandLogo({ compact = false }: BrandLogoProps) {
         alt=""
         className={[
           'shrink-0 rounded-2xl object-cover shadow-sm shadow-[#D96F4F]/10',
-          compact ? 'h-12 w-12' : 'h-14 w-14',
+          compact ? 'h-14 w-16' : 'h-16 w-20',
         ].join(' ')}
       />
       <span className="inline-flex items-baseline gap-1">

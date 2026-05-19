@@ -58,9 +58,9 @@ function PublicHome() {
       <section className="grid gap-8 py-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
         <div>
           <img
-            src="/forpets-logo.png"
+            src="/forpets-logo-tight.png"
             alt="포펫츠 로고"
-            className="h-36 w-36 rounded-3xl object-cover shadow-sm shadow-[#D96F4F]/10"
+            className="h-32 w-32 rounded-3xl object-cover shadow-sm shadow-[#D96F4F]/10"
           />
           <p className="fp-kicker mt-5">FORPETS MVP</p>
           <h1 className="mt-4 max-w-2xl text-4xl font-black leading-tight tracking-tight text-[#2A2622] md:text-5xl">
@@ -141,9 +141,9 @@ function SignedInHome() {
       <section className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <img
-            src="/forpets-logo.png"
+            src="/forpets-logo-tight.png"
             alt="포펫츠 로고"
-            className="h-32 w-32 rounded-3xl object-cover shadow-sm shadow-[#D96F4F]/10"
+            className="h-36 w-36 rounded-3xl object-cover shadow-sm shadow-[#D96F4F]/10"
           />
           <p className="fp-kicker mt-5">HOME</p>
           <h1 className="mt-3 text-3xl font-black tracking-tight text-[#2A2622]">
