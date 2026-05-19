@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   acceptCareRequest,
   cancelSentCareRequest,
@@ -17,6 +19,15 @@ import type { ApiResponse, CareRequest, Id, Proposal, TimeSlotResponse } from '.
 
 type CareRequestAction = (requestId: Id) => Promise<ApiResponse<CareRequest>>;
 type ProposalAction = (proposalId: Id) => Promise<ApiResponse<Proposal>>;
+type ActivityTab = 'sent' | 'received' | 'proposals';
+
+const getActivityTab = (value: string | null): ActivityTab | null => {
+  if (value === 'sent' || value === 'received' || value === 'proposals') {
+    return value;
+  }
+
+  return null;
+};
 
 const formatTimeSlots = (timeSlots: TimeSlotResponse[]) =>
   timeSlots
@@ -33,6 +44,8 @@ const getProposalActionMessage = (actionLabel: string) =>
 
 // 내가 보낸 요청, 받은 요청, 등록한 제안을 한 화면에서 관리하는 페이지입니다.
 function MyActivityPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedTab = getActivityTab(searchParams.get('tab'));
   const [sentRequests, setSentRequests] = useState<CareRequest[]>([]);
   const [receivedRequests, setReceivedRequests] = useState<CareRequest[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -187,121 +200,186 @@ function MyActivityPage() {
         <p className="mt-6 rounded-2xl bg-white p-5 text-sm text-[#6F675F] shadow-sm">
           요청과 제안 목록을 불러오는 중입니다.
         </p>
+      ) : !selectedTab ? (
+        <section className="mt-6 grid gap-4 md:grid-cols-3">
+          <ActivitySummaryCard
+            title="보낸 돌봄 요청"
+            count={sentRequests.length}
+            description="보호자가 시터에게 직접 보낸 요청입니다."
+            onClick={() => setSearchParams({ tab: 'sent' })}
+          />
+          <ActivitySummaryCard
+            title="받은 돌봄 요청"
+            count={receivedRequests.length}
+            description="시터로서 받은 요청을 수락하거나 거절합니다."
+            onClick={() => setSearchParams({ tab: 'received' })}
+          />
+          <ActivitySummaryCard
+            title="내 제안"
+            count={proposals.length}
+            description="공고에 보낸 제안과 상태를 확인합니다."
+            onClick={() => setSearchParams({ tab: 'proposals' })}
+          />
+        </section>
       ) : (
         <div className="mt-6 grid gap-6">
-          <ActivitySection title="보낸 돌봄 요청" count={sentRequests.length}>
-            {sentRequests.length === 0 && <EmptyMessage text="보낸 돌봄 요청이 없습니다." />}
-            {sentRequests.map((request) => (
-              <CareRequestCard
-                key={`sent-${request.id}`}
-                request={request}
-                actionArea={
-                  request.status === 'PENDING' && (
-                    <button
-                      type="button"
-                      disabled={actionKey === `cancel-${request.id}`}
-                      className="rounded-2xl bg-[#F4E9DE] px-4 py-3 text-sm font-bold text-[#6F675F] disabled:opacity-60"
-                      onClick={() =>
-                        void handleCareRequestAction(
-                          request.id,
-                          'cancel',
-                          '취소',
-                          cancelSentCareRequest,
-                        )
-                      }
-                    >
-                      요청 취소
-                    </button>
-                  )
-                }
-              />
-            ))}
-          </ActivitySection>
+          <button
+            type="button"
+            onClick={() => setSearchParams({})}
+            className="w-fit rounded-2xl border border-[#E7DCD1] bg-white px-4 py-2 text-sm font-bold text-[#6F675F]"
+          >
+            요청/제안 요약으로
+          </button>
 
-          <ActivitySection title="받은 돌봄 요청" count={receivedRequests.length}>
-            {receivedRequests.length === 0 && <EmptyMessage text="받은 돌봄 요청이 없습니다." />}
-            {receivedRequests.map((request) => (
-              <CareRequestCard
-                key={`received-${request.id}`}
-                request={request}
-                actionArea={
-                  request.status === 'PENDING' && (
-                    <div className="flex flex-wrap gap-2">
+          {selectedTab === 'sent' && (
+            <ActivitySection title="보낸 돌봄 요청" count={sentRequests.length}>
+              {sentRequests.length === 0 && <EmptyMessage text="보낸 돌봄 요청이 없습니다." />}
+              {sentRequests.map((request) => (
+                <CareRequestCard
+                  key={`sent-${request.id}`}
+                  request={request}
+                  actionArea={
+                    request.status === 'PENDING' && (
                       <button
                         type="button"
-                        disabled={actionKey === `accept-${request.id}`}
-                        className="rounded-2xl bg-[#2A2622] px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
+                        disabled={actionKey === `cancel-${request.id}`}
+                        className="rounded-2xl bg-[#F4E9DE] px-4 py-3 text-sm font-bold text-[#6F675F] disabled:opacity-60"
                         onClick={() =>
                           void handleCareRequestAction(
                             request.id,
-                            'accept',
-                            '수락',
-                            acceptCareRequest,
+                            'cancel',
+                            '취소',
+                            cancelSentCareRequest,
                           )
                         }
                       >
-                        수락
+                        요청 취소
                       </button>
+                    )
+                  }
+                />
+              ))}
+            </ActivitySection>
+          )}
+
+          {selectedTab === 'received' && (
+            <ActivitySection title="받은 돌봄 요청" count={receivedRequests.length}>
+              {receivedRequests.length === 0 && (
+                <EmptyMessage text="받은 돌봄 요청이 없습니다." />
+              )}
+              {receivedRequests.map((request) => (
+                <CareRequestCard
+                  key={`received-${request.id}`}
+                  request={request}
+                  actionArea={
+                    request.status === 'PENDING' && (
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          disabled={actionKey === `accept-${request.id}`}
+                          className="rounded-2xl bg-[#2A2622] px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
+                          onClick={() =>
+                            void handleCareRequestAction(
+                              request.id,
+                              'accept',
+                              '수락',
+                              acceptCareRequest,
+                            )
+                          }
+                        >
+                          수락
+                        </button>
+                        <button
+                          type="button"
+                          disabled={actionKey === `reject-${request.id}`}
+                          className="rounded-2xl bg-[#FFF0EA] px-4 py-3 text-sm font-bold text-[#B44727] disabled:opacity-60"
+                          onClick={() =>
+                            void handleCareRequestAction(
+                              request.id,
+                              'reject',
+                              '거절',
+                              rejectCareRequest,
+                            )
+                          }
+                        >
+                          거절
+                        </button>
+                      </div>
+                    )
+                  }
+                />
+              ))}
+            </ActivitySection>
+          )}
+
+          {selectedTab === 'proposals' && (
+            <ActivitySection title="내 제안" count={proposals.length}>
+              {proposals.length === 0 && (
+                <EmptyMessage text="등록한 제안이 없습니다." />
+              )}
+              {proposals.map((proposal) => (
+                <ProposalCard
+                  key={proposal.id}
+                  proposal={proposal}
+                  actionArea={
+                    proposal.status === 'PENDING' && (
                       <button
                         type="button"
-                        disabled={actionKey === `reject-${request.id}`}
-                        className="rounded-2xl bg-[#FFF0EA] px-4 py-3 text-sm font-bold text-[#B44727] disabled:opacity-60"
+                        disabled={actionKey === `withdraw-${proposal.id}`}
+                        className="rounded-2xl bg-[#F4E9DE] px-4 py-3 text-sm font-bold text-[#6F675F] disabled:opacity-60"
                         onClick={() =>
-                          void handleCareRequestAction(
-                            request.id,
-                            'reject',
-                            '거절',
-                            rejectCareRequest,
+                          void handleProposalAction(
+                            proposal.id,
+                            'withdraw',
+                            '철회',
+                            withdrawProposal,
                           )
                         }
                       >
-                        거절
+                        제안 철회
                       </button>
-                    </div>
-                  )
-                }
-              />
-            ))}
-          </ActivitySection>
-
-          <ActivitySection title="내 제안" count={proposals.length}>
-            {proposals.length === 0 && <EmptyMessage text="등록한 제안이 없습니다." />}
-            {proposals.map((proposal) => (
-              <ProposalCard
-                key={proposal.id}
-                proposal={proposal}
-                actionArea={
-                  proposal.status === 'PENDING' && (
-                    <button
-                      type="button"
-                      disabled={actionKey === `withdraw-${proposal.id}`}
-                      className="rounded-2xl bg-[#F4E9DE] px-4 py-3 text-sm font-bold text-[#6F675F] disabled:opacity-60"
-                      onClick={() =>
-                        void handleProposalAction(
-                          proposal.id,
-                          'withdraw',
-                          '철회',
-                          withdrawProposal,
-                        )
-                      }
-                    >
-                      제안 철회
-                    </button>
-                  )
-                }
-              />
-            ))}
-          </ActivitySection>
+                    )
+                  }
+                />
+              ))}
+            </ActivitySection>
+          )}
         </div>
       )}
     </main>
   );
 }
 
+interface ActivitySummaryCardProps {
+  title: string;
+  count: number;
+  description: string;
+  onClick: () => void;
+}
+
+function ActivitySummaryCard({
+  title,
+  count,
+  description,
+  onClick,
+}: ActivitySummaryCardProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-2xl border border-[#E7DCD1] bg-white p-5 text-left shadow-sm transition hover:border-[#E26B4A]"
+    >
+      <p className="text-sm font-bold text-[#E26B4A]">{title}</p>
+      <p className="mt-4 text-3xl font-black text-[#2A2622]">{count}건</p>
+      <p className="mt-3 text-sm leading-6 text-[#6F675F]">{description}</p>
+    </button>
+  );
+}
+
 interface ActivitySectionProps {
   title: string;
   count: number;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 // 요청/제안 목록의 반복 섹션 레이아웃입니다.
@@ -329,7 +407,7 @@ function EmptyMessage({ text }: { text: string }) {
 
 interface CareRequestCardProps {
   request: CareRequest;
-  actionArea?: React.ReactNode;
+  actionArea?: ReactNode;
 }
 
 // 돌봄 요청 카드입니다.
@@ -378,7 +456,7 @@ function CareRequestCard({ request, actionArea }: CareRequestCardProps) {
 
 interface ProposalCardProps {
   proposal: Proposal;
-  actionArea?: React.ReactNode;
+  actionArea?: ReactNode;
 }
 
 // 시터가 공고에 등록한 제안 카드입니다.

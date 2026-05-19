@@ -8,16 +8,14 @@ import BrandLogo from './BrandLogo';
 
 const navItems = [
   { to: '/', label: '홈', icon: 'home', group: '매칭' },
+  { to: '/me', label: '내 계정', icon: 'user', group: '계정' },
+  { to: '/activity', label: '요청/제안', icon: 'activity', group: '매칭' },
+  { to: '/reservations', label: '예약 관리', icon: 'calendar', group: '매칭' },
   { to: '/posts', label: '공고 보기', icon: 'post', group: '매칭' },
   { to: '/sitters', label: '시터 찾기', icon: 'sitter', group: '매칭' },
-  { to: '/activity', label: '요청/제안', icon: 'activity', group: '매칭' },
-  { to: '/reservations', label: '예약 관리', icon: 'calendar', group: '관리' },
-  { to: '/pets', label: '반려동물', icon: 'paw', group: '관리' },
-  { to: '/my-sitter', label: '내 시터', icon: 'badge', group: '계정' },
-  { to: '/me', label: '내 정보', icon: 'user', group: '계정' },
 ];
 
-const navGroups = ['매칭', '관리', '계정'];
+const navGroups = ['계정', '매칭'];
 
 const iconPaths = {
   home: 'M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1v-9.5Z',
