@@ -58,7 +58,7 @@ function PublicHome() {
       <section className="grid gap-8 py-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
         <div>
           <img
-            src="/forpets-logo-tight.png"
+            src="/forpets-logo.png"
             alt="포펫츠 로고"
             className="h-28 w-32 rounded-3xl object-cover shadow-sm shadow-[#D96F4F]/10"
           />
