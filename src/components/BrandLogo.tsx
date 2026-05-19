@@ -12,8 +12,8 @@ function BrandLogo({ compact = false }: BrandLogoProps) {
         src="/forpets-mark.png"
         alt=""
         className={[
-          'shrink-0 rounded-xl object-cover shadow-sm shadow-[#D96F4F]/10',
-          compact ? 'h-8 w-8' : 'h-10 w-10',
+          'shrink-0 rounded-2xl object-cover shadow-sm shadow-[#D96F4F]/10',
+          compact ? 'h-12 w-12' : 'h-14 w-14',
         ].join(' ')}
       />
       <span className="inline-flex items-baseline gap-1">
