@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import BrandLogo from '../components/BrandLogo';
 import { useAuth } from '../hooks/useAuth';
 
 const serviceSteps = [
@@ -58,8 +57,12 @@ function PublicHome() {
     <main className="mx-auto max-w-6xl px-5 py-8 lg:px-8">
       <section className="grid gap-8 py-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
         <div>
-          <BrandLogo />
-          <p className="fp-kicker mt-4">FORPETS MVP</p>
+          <img
+            src="/forpets-mark.png"
+            alt="강아지와 고양이"
+            className="h-24 w-24 rounded-3xl object-cover shadow-sm shadow-[#D96F4F]/10"
+          />
+          <p className="fp-kicker mt-5">FORPETS MVP</p>
           <h1 className="mt-4 max-w-2xl text-4xl font-black leading-tight tracking-tight text-[#2A2622] md:text-5xl">
             보호자와 펫시터가 조건으로 만나는 케어 매칭 플랫폼
           </h1>
@@ -88,8 +91,8 @@ function PublicHome() {
           <div className="mb-5 overflow-hidden rounded-2xl bg-[#D96F4F]/10">
             <img
               src="/forpets-logo.png"
-              alt="포펫츠 강아지와 고양이 로고"
-              className="h-64 w-full object-cover object-center"
+              alt="강아지와 고양이"
+              className="h-64 w-full object-cover object-[center_18%]"
             />
           </div>
           <div className="flex items-center justify-between border-b border-[#EFE5DA] pb-4">
@@ -137,8 +140,12 @@ function SignedInHome() {
     <main className="mx-auto max-w-6xl px-5 py-7 lg:px-8">
       <section className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <BrandLogo />
-          <p className="fp-kicker mt-4">HOME</p>
+          <img
+            src="/forpets-mark.png"
+            alt="강아지와 고양이"
+            className="h-20 w-20 rounded-3xl object-cover shadow-sm shadow-[#D96F4F]/10"
+          />
+          <p className="fp-kicker mt-5">HOME</p>
           <h1 className="mt-3 text-3xl font-black tracking-tight text-[#2A2622]">
             매칭을 시작해볼까요?
           </h1>
