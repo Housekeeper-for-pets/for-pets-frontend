@@ -26,9 +26,24 @@ const buildQuery = (query: ReservationSearchQuery): ReservationSearchQuery => {
   return nextQuery;
 };
 
+const sortReservations = (
+  reservations: Reservation[],
+  sort?: string,
+) => {
+  const field = sort === 'updatedAt' ? 'updatedAt' : 'createdAt';
+
+  return [...reservations].sort((first, second) => {
+    const firstTime = first[field] ? new Date(first[field]).getTime() : 0;
+    const secondTime = second[field] ? new Date(second[field]).getTime() : 0;
+
+    return secondTime - firstTime;
+  });
+};
+
 // 로그인한 사용자의 예약 목록을 조회하고 상태별로 필터링하는 페이지입니다.
 function ReservationsPage() {
   const [query, setQuery] = useState<ReservationSearchQuery>(initialQuery);
+  const [allReservations, setAllReservations] = useState<Reservation[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,11 +54,19 @@ function ReservationsPage() {
     setErrorMessage('');
 
     try {
-      const result = await getMyReservations(buildQuery(nextQuery));
+      const result = await getMyReservations();
 
       if (result.success) {
-        setReservations(result.data.content);
-        setTotalElements(result.data.totalElements);
+        const nextReservations = sortReservations(
+          nextQuery.status
+            ? result.data.filter((reservation) => reservation.status === nextQuery.status)
+            : result.data,
+          nextQuery.sort,
+        );
+
+        setAllReservations(result.data);
+        setReservations(nextReservations);
+        setTotalElements(nextReservations.length);
         return;
       }
 
@@ -61,7 +84,19 @@ function ReservationsPage() {
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    void fetchReservations(query);
+    const nextQuery = buildQuery(query);
+    const nextReservations = sortReservations(
+      nextQuery.status
+        ? allReservations.filter(
+            (reservation) => reservation.status === nextQuery.status,
+          )
+        : allReservations,
+      nextQuery.sort,
+    );
+
+    setQuery(nextQuery);
+    setReservations(nextReservations);
+    setTotalElements(nextReservations.length);
   };
 
   return (
@@ -157,7 +192,8 @@ function ReservationsPage() {
                   예약 #{reservation.id}
                 </h2>
                 <p className="mt-2 text-sm text-[#6F675F]">
-                  보호자 {reservation.guardianId} · 시터 {reservation.sitterId}
+                  보호자 {reservation.guardianId} · 시터 프로필{' '}
+                  {reservation.sitterProfileId}
                 </p>
               </div>
 

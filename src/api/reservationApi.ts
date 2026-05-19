@@ -4,18 +4,14 @@ import type {
   CancelReservationRequest,
   CancelReservationResponse,
   Id,
-  PageResponse,
   Reservation,
-  ReservationSearchQuery,
   ReservationStatusResponse,
 } from '../types';
 
 // 현재 로그인한 사용자의 예약 목록을 조회합니다.
-export const getMyReservations = async (query?: ReservationSearchQuery) => {
-  const response = await axiosInstance.get<ApiResponse<PageResponse<Reservation>>>(
-    '/reservations/me',
-    { params: query },
-  );
+export const getMyReservations = async () => {
+  const response =
+    await axiosInstance.get<ApiResponse<Reservation[]>>('/reservations/me');
 
   return response.data;
 };

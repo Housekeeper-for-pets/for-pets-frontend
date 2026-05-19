@@ -9,14 +9,20 @@ interface RegionSelectProps {
   idPrefix: string;
   emptyValue?: Region;
   allLabel?: string;
+  helperText?: string;
 }
 
+// 현재 백엔드 Region enum은 서울 25개 구만 지원하므로, 전송 가능한 지역만 노출합니다.
+const selectableRegionGroups = regionGroups.filter(
+  (group) => group.label === '서울특별시',
+);
+
 const findSelectedGroup = (value?: Region) =>
-  regionGroups.find((group) =>
+  selectableRegionGroups.find((group) =>
     group.options.some((option) => option.value === value),
   );
 
-// 전국 지역을 시·도 선택 후 시·군·구 선택으로 나누어 입력받는 컴포넌트입니다.
+// 지역을 시·도 선택 후 시·군·구 선택으로 나누어 입력받는 컴포넌트입니다.
 function RegionSelect({
   value,
   onChange,
@@ -24,13 +30,15 @@ function RegionSelect({
   idPrefix,
   emptyValue,
   allLabel = '지역 선택',
+  helperText = '현재 백엔드 지원 지역은 서울특별시 25개 구입니다.',
 }: RegionSelectProps) {
   const selectedGroup = findSelectedGroup(value);
   const [selectedGroupLabel, setSelectedGroupLabel] = useState(
     selectedGroup?.label ?? '',
   );
   const currentGroup =
-    regionGroups.find((group) => group.label === selectedGroupLabel) ?? selectedGroup;
+    selectableRegionGroups.find((group) => group.label === selectedGroupLabel) ??
+    selectedGroup;
 
   useEffect(() => {
     setSelectedGroupLabel(selectedGroup?.label ?? '');
@@ -56,7 +64,7 @@ function RegionSelect({
           }}
         >
           <option value="">{allLabel}</option>
-          {regionGroups.map((group) => (
+          {selectableRegionGroups.map((group) => (
             <option key={group.label} value={group.label}>
               {group.label}
             </option>
@@ -72,7 +80,7 @@ function RegionSelect({
           disabled={!selectedGroupLabel}
           value={value && value !== emptyValue ? value : ''}
           onChange={(event) => {
-            onChange(event.target.value ? event.target.value : emptyValue);
+            onChange(event.target.value ? (event.target.value as Region) : emptyValue);
           }}
         >
           <option value="">시·군·구 선택</option>
@@ -83,6 +91,12 @@ function RegionSelect({
           ))}
         </select>
       </label>
+
+      {helperText && (
+        <p className="text-xs font-medium leading-5 text-[#8A8178] md:col-span-2">
+          {helperText}
+        </p>
+      )}
     </div>
   );
 }

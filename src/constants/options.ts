@@ -16,7 +16,7 @@ import type {
 
 interface RegionGroup {
   label: string;
-  options: Array<{ value: Region; label: string }>;
+  options: Array<{ value: string; label: string }>;
 }
 
 export const regionGroups: RegionGroup[] = [
@@ -355,7 +355,7 @@ export const regionGroups: RegionGroup[] = [
   },
 ];
 
-export const regionOptions: Array<{ value: Region; label: string }> = [
+export const regionOptions: Array<{ value: string; label: string }> = [
   { value: 'UNKNOWN', label: '지역 미설정' },
   ...regionGroups.flatMap((group) =>
     group.options.map((option) => ({

@@ -126,7 +126,7 @@ function PostsPage() {
         <RegionSelect
           idPrefix="post-search-region"
           selectClassName={selectClassName}
-          value={query.region ?? ''}
+          value={query.region}
           allLabel="전체 지역"
           onChange={(value) =>
             setQuery((prevQuery) => ({

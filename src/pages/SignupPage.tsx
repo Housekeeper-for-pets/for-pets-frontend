@@ -19,6 +19,9 @@ const initialForm: SignupRequest = {
 const selectClassName =
   'mt-2 w-full rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm text-[#2A2622] outline-none transition focus:border-[#E26B4A] focus:ring-4 focus:ring-[#F7D8CC]';
 
+const passwordPattern =
+  /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+
 // 일반 회원 가입을 처리하는 페이지입니다.
 function SignupPage() {
   const navigate = useNavigate();
@@ -35,6 +38,12 @@ function SignupPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage('');
+
+    if (!passwordPattern.test(form.password)) {
+      setErrorMessage('비밀번호는 8자 이상, 영문·숫자·특수문자를 모두 포함해야 합니다.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -84,6 +93,9 @@ function SignupPage() {
           value={form.password}
           onChange={(event) => updateField('password', event.target.value)}
         />
+        <p className="-mt-3 text-xs font-medium leading-5 text-[#8A8178]">
+          8자 이상, 영문·숫자·특수문자를 모두 포함해 주세요.
+        </p>
         <FormField
           id="nickname"
           label="닉네임"

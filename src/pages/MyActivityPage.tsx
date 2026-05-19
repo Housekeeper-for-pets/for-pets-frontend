@@ -350,6 +350,9 @@ function CareRequestCard({ request, actionArea }: CareRequestCardProps) {
       <p className="mt-4 text-sm leading-6 text-[#6F675F]">
         {request.message || '요청 메시지가 없습니다.'}
       </p>
+      <p className="mt-3 text-lg font-bold text-[#2A2622]">
+        요청 금액 {formatPrice(request.requestPrice)}
+      </p>
 
       <div className="mt-4 flex flex-wrap gap-2">
         {request.pets.map((pet) => (

@@ -163,7 +163,8 @@ function ReservationDetailPage() {
                 예약 #{reservation.id}
               </h1>
               <p className="mt-3 text-sm leading-6 text-[#6F675F]">
-                보호자 {reservation.guardianId} · 시터 {reservation.sitterId}
+                보호자 {reservation.guardianId} · 시터 프로필{' '}
+                {reservation.sitterProfileId}
               </p>
             </div>
             <span className="w-fit rounded-full bg-[#F4E9DE] px-3 py-1 text-xs font-bold text-[#6F675F]">
@@ -175,7 +176,13 @@ function ReservationDetailPage() {
             <div className="rounded-2xl bg-[#FAF6F1] p-4">
               <dt className="text-xs font-bold text-[#9B8E82]">결제 상태</dt>
               <dd className="mt-2 text-lg font-bold text-[#2A2622]">
-                {reservation.paymentStatus ?? '미정'}
+                {reservation.guardianPaid && reservation.sitterPaid
+                  ? '양측 완료'
+                  : reservation.guardianPaid
+                    ? '시터 대기'
+                    : reservation.sitterPaid
+                      ? '보호자 대기'
+                      : '결제 대기'}
               </dd>
             </div>
             <div className="rounded-2xl bg-[#FAF6F1] p-4">
