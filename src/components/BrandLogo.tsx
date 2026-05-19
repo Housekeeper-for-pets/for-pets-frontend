@@ -9,7 +9,7 @@ function BrandLogo({ compact = false }: BrandLogoProps) {
   return (
     <Link to="/" className="inline-flex items-center gap-2">
       <img
-        src="/forpets-mark.png"
+        src="/forpets-pets.png"
         alt=""
         className={[
           'shrink-0 rounded-2xl object-cover shadow-sm shadow-[#D96F4F]/10',
