@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { getMyReservations } from '../api';
-import { reservationStatusLabels } from '../constants/options';
+import { careTypeLabels, reservationStatusLabels } from '../constants/options';
 import type { Reservation, ReservationSearchQuery, ReservationStatus } from '../types';
 
 const initialQuery: ReservationSearchQuery = {
@@ -26,9 +26,31 @@ const buildQuery = (query: ReservationSearchQuery): ReservationSearchQuery => {
   return nextQuery;
 };
 
+const sortReservations = (
+  reservations: Reservation[],
+  sort?: string,
+) => {
+  const field = sort === 'updatedAt' ? 'updatedAt' : 'createdAt';
+
+  return [...reservations].sort((first, second) => {
+    const firstTime = first[field] ? new Date(first[field]).getTime() : 0;
+    const secondTime = second[field] ? new Date(second[field]).getTime() : 0;
+
+    return secondTime - firstTime;
+  });
+};
+
+const getPaymentLabel = (reservation: Reservation) => {
+  if (reservation.guardianPaid && reservation.sitterPaid) return '결제 완료';
+  if (reservation.guardianPaid || reservation.sitterPaid) return '한쪽 결제 완료';
+
+  return '결제 대기';
+};
+
 // 로그인한 사용자의 예약 목록을 조회하고 상태별로 필터링하는 페이지입니다.
 function ReservationsPage() {
   const [query, setQuery] = useState<ReservationSearchQuery>(initialQuery);
+  const [allReservations, setAllReservations] = useState<Reservation[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,11 +61,19 @@ function ReservationsPage() {
     setErrorMessage('');
 
     try {
-      const result = await getMyReservations(buildQuery(nextQuery));
+      const result = await getMyReservations();
 
       if (result.success) {
-        setReservations(result.data.content);
-        setTotalElements(result.data.totalElements);
+        const nextReservations = sortReservations(
+          nextQuery.status
+            ? result.data.filter((reservation) => reservation.status === nextQuery.status)
+            : result.data,
+          nextQuery.sort,
+        );
+
+        setAllReservations(result.data);
+        setReservations(nextReservations);
+        setTotalElements(nextReservations.length);
         return;
       }
 
@@ -56,12 +86,28 @@ function ReservationsPage() {
   };
 
   useEffect(() => {
-    void fetchReservations(query);
+    const timerId = window.setTimeout(() => {
+      void fetchReservations(initialQuery);
+    }, 0);
+
+    return () => window.clearTimeout(timerId);
   }, []);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    void fetchReservations(query);
+    const nextQuery = buildQuery(query);
+    const nextReservations = sortReservations(
+      nextQuery.status
+        ? allReservations.filter(
+            (reservation) => reservation.status === nextQuery.status,
+          )
+        : allReservations,
+      nextQuery.sort,
+    );
+
+    setQuery(nextQuery);
+    setReservations(nextReservations);
+    setTotalElements(nextReservations.length);
   };
 
   return (
@@ -80,7 +126,7 @@ function ReservationsPage() {
       </section>
 
       <form
-        className="mt-6 grid gap-3 rounded-[28px] border border-[#E7DCD1] bg-white p-5 shadow-sm md:grid-cols-[1fr_1fr_auto]"
+        className="mt-6 grid gap-3 rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm md:grid-cols-[1fr_1fr_auto]"
         onSubmit={handleSubmit}
       >
         <select
@@ -132,13 +178,13 @@ function ReservationsPage() {
 
       <section className="mt-6 grid gap-4">
         {isLoading && (
-          <p className="rounded-[24px] bg-white p-5 text-sm text-[#6F675F] shadow-sm">
+          <p className="rounded-2xl bg-white p-5 text-sm text-[#6F675F] shadow-sm">
             예약 목록을 불러오는 중입니다.
           </p>
         )}
 
         {!isLoading && reservations.length === 0 && (
-          <p className="rounded-[24px] bg-white p-5 text-sm leading-6 text-[#6F675F] shadow-sm">
+          <p className="rounded-2xl bg-white p-5 text-sm leading-6 text-[#6F675F] shadow-sm">
             아직 예약이 없습니다.
           </p>
         )}
@@ -146,7 +192,7 @@ function ReservationsPage() {
         {reservations.map((reservation) => (
           <article
             key={reservation.id}
-            className="rounded-[24px] border border-[#E7DCD1] bg-white p-5 shadow-sm"
+            className="rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm"
           >
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
               <div>
@@ -157,7 +203,12 @@ function ReservationsPage() {
                   예약 #{reservation.id}
                 </h2>
                 <p className="mt-2 text-sm text-[#6F675F]">
-                  보호자 {reservation.guardianId} · 시터 {reservation.sitterId}
+                  보호자 {reservation.guardianId} · 시터 프로필{' '}
+                  {reservation.sitterProfileId}
+                </p>
+                <p className="mt-2 text-sm font-semibold text-[#8A8178]">
+                  {careTypeLabels[reservation.careType]} · {getPaymentLabel(reservation)}
+                  {reservation.source ? ` · ${reservation.source}` : ''}
                 </p>
               </div>
 

@@ -137,7 +137,7 @@ function PostDetailPage() {
   if (isLoading) {
     return (
       <main className="mx-auto max-w-6xl px-6 py-8">
-        <p className="rounded-[24px] bg-white p-5 text-sm text-[#6F675F] shadow-sm">
+        <p className="rounded-2xl bg-white p-5 text-sm text-[#6F675F] shadow-sm">
           공고 정보를 불러오는 중입니다.
         </p>
       </main>
@@ -147,7 +147,7 @@ function PostDetailPage() {
   if (errorMessage || !post) {
     return (
       <main className="mx-auto max-w-6xl px-6 py-8">
-        <p className="rounded-[24px] bg-[#FFF0EA] p-5 text-sm font-medium text-[#B44727]">
+        <p className="rounded-2xl bg-[#FFF0EA] p-5 text-sm font-medium text-[#B44727]">
           {errorMessage || '공고 정보를 찾을 수 없습니다.'}
         </p>
       </main>
@@ -157,7 +157,7 @@ function PostDetailPage() {
   return (
     <main className="mx-auto max-w-6xl px-6 py-8">
       <section className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        <div className="rounded-[28px] border border-[#E7DCD1] bg-white p-7 shadow-sm">
+        <div className="rounded-2xl border border-[#E7DCD1] bg-white p-7 shadow-sm">
           <div className="flex flex-wrap gap-2">
             <span className="rounded-full bg-[#FFF0EA] px-3 py-1 text-xs font-bold text-[#B44727]">
               {careTypeLabels[post.careType]}
@@ -197,7 +197,7 @@ function PostDetailPage() {
           </dl>
         </div>
 
-        <aside className="rounded-[28px] border border-[#E7DCD1] bg-white p-6 shadow-sm">
+        <aside className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
           <p className="text-sm font-bold text-[#E26B4A]">PROPOSAL</p>
           <h2 className="mt-3 text-xl font-bold text-[#2A2622]">제안 등록</h2>
           <p className="mt-2 text-sm leading-6 text-[#6F675F]">
@@ -261,7 +261,7 @@ function PostDetailPage() {
       </section>
 
       <section className="mt-6 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-[28px] border border-[#E7DCD1] bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="text-sm font-bold text-[#E26B4A]">PETS</p>
@@ -291,7 +291,7 @@ function PostDetailPage() {
           </div>
         </div>
 
-        <div className="rounded-[28px] border border-[#E7DCD1] bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="text-sm font-bold text-[#E26B4A]">TIME SLOTS</p>
@@ -320,7 +320,7 @@ function PostDetailPage() {
         </div>
       </section>
 
-      <section className="mt-6 rounded-[28px] border border-[#E7DCD1] bg-white p-6 shadow-sm">
+      <section className="mt-6 rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
         <div className="flex items-end justify-between gap-4">
           <div>
             <p className="text-sm font-bold text-[#E26B4A]">PROPOSALS</p>

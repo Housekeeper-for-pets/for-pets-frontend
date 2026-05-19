@@ -1,9 +1,97 @@
 @import "tailwindcss";
 
 /* 전체 앱에 적용되는 기본 스타일입니다. */
+:root {
+  --fp-bg: #fbf7f1;
+  --fp-surface: #fffdf9;
+  --fp-panel: #f6efe7;
+  --fp-panel-strong: #f0e5da;
+  --fp-border: #eadfd3;
+  --fp-text: #28231f;
+  --fp-muted: #7d7368;
+  --fp-faint: #a89d91;
+  --fp-primary: #d96f4f;
+  --fp-primary-strong: #c85d3e;
+  --fp-green: #7a955f;
+  --fp-shadow: 0 18px 48px rgb(56 43 32 / 0.08);
+}
+
+html {
+  background: var(--fp-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
 body {
   margin: 0;
-  background-color: #faf6f1;
-  color: #2a2622;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background:
+    radial-gradient(circle at 14% 18%, rgb(217 111 79 / 0.12), transparent 26rem),
+    linear-gradient(180deg, #fbf8f3 0%, var(--fp-bg) 44%, #f8f1e9 100%);
+  color: var(--fp-text);
+  font-family:
+    Pretendard,
+    "Apple SD Gothic Neo",
+    "Noto Sans KR",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgb(217 111 79 / 0.18);
+  color: var(--fp-text);
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+input,
+select,
+textarea {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.78);
+}
+
+button,
+input,
+select,
+textarea,
+a {
+  outline-offset: 3px;
+}
+
+.fp-shell-card {
+  background: rgb(255 253 249 / 0.94);
+  border: 1px solid var(--fp-border);
+  box-shadow: var(--fp-shadow);
+}
+
+.fp-subtle-card {
+  background: rgb(246 239 231 / 0.7);
+  border: 1px solid rgb(234 223 211 / 0.82);
+}
+
+.fp-kicker {
+  color: var(--fp-primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
 }

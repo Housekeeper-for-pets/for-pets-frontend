@@ -9,6 +9,7 @@ import {
 } from '../api';
 import {
   cancelCategoryLabels,
+  careTypeLabels,
   reservationStatusLabels,
 } from '../constants/options';
 import type {
@@ -16,7 +17,6 @@ import type {
   CancelReservationRequest,
   ApiResponse,
   Reservation,
-  ReservationStatus,
 } from '../types';
 
 const initialCancelForm: CancelReservationRequest = {
@@ -26,6 +26,22 @@ const initialCancelForm: CancelReservationRequest = {
 
 const inputClassName =
   'w-full rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm text-[#2A2622] outline-none transition placeholder:text-[#B0A59A] focus:border-[#E26B4A] focus:ring-4 focus:ring-[#F7D8CC]';
+
+const getPaymentLabel = (reservation: Reservation) => {
+  if (reservation.guardianPaid && reservation.sitterPaid) {
+    return '양측 결제 완료';
+  }
+
+  if (reservation.guardianPaid) {
+    return '시터 결제 대기';
+  }
+
+  if (reservation.sitterPaid) {
+    return '보호자 결제 대기';
+  }
+
+  return '양측 결제 대기';
+};
 
 // 예약 상세 정보와 확정/완료/취소 액션을 제공하는 페이지입니다.
 function ReservationDetailPage() {
@@ -37,12 +53,6 @@ function ReservationDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [actionMessage, setActionMessage] = useState('');
-
-  const updateReservationStatus = (status: ReservationStatus) => {
-    setReservation((prevReservation) =>
-      prevReservation ? { ...prevReservation, status } : prevReservation,
-    );
-  };
 
   useEffect(() => {
     const fetchReservation = async () => {
@@ -71,8 +81,8 @@ function ReservationDetailPage() {
     void fetchReservation();
   }, [reservationId]);
 
-  const runReservationAction = async <T extends { status: ReservationStatus }>(
-    action: () => Promise<ApiResponse<T>>,
+  const runReservationAction = async (
+    action: () => Promise<ApiResponse<Reservation>>,
     successMessage: string,
   ) => {
     setErrorMessage('');
@@ -83,7 +93,7 @@ function ReservationDetailPage() {
       const result = await action();
 
       if (result.success && result.data) {
-        updateReservationStatus(result.data.status);
+        setReservation(result.data);
         setActionMessage(successMessage);
         return;
       }
@@ -100,7 +110,7 @@ function ReservationDetailPage() {
     if (!reservation) return;
     void runReservationAction(
       () => confirmReservation(reservation.id),
-      '예약이 확정되었습니다.',
+      '결제 확인이 반영되었습니다. 양측이 모두 확인하면 예약이 확정됩니다.',
     );
   };
 
@@ -131,7 +141,7 @@ function ReservationDetailPage() {
   if (isLoading) {
     return (
       <main className="mx-auto max-w-6xl px-6 py-8">
-        <p className="rounded-[24px] bg-white p-5 text-sm text-[#6F675F] shadow-sm">
+        <p className="rounded-2xl bg-white p-5 text-sm text-[#6F675F] shadow-sm">
           예약 정보를 불러오는 중입니다.
         </p>
       </main>
@@ -141,7 +151,7 @@ function ReservationDetailPage() {
   if (errorMessage && !reservation) {
     return (
       <main className="mx-auto max-w-6xl px-6 py-8">
-        <p className="rounded-[24px] bg-[#FFF0EA] p-5 text-sm font-medium text-[#B44727]">
+        <p className="rounded-2xl bg-[#FFF0EA] p-5 text-sm font-medium text-[#B44727]">
           {errorMessage}
         </p>
       </main>
@@ -155,7 +165,7 @@ function ReservationDetailPage() {
   return (
     <main className="mx-auto max-w-6xl px-6 py-8">
       <section className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        <div className="rounded-[28px] border border-[#E7DCD1] bg-white p-7 shadow-sm">
+        <div className="rounded-2xl border border-[#E7DCD1] bg-white p-7 shadow-sm">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
             <div>
               <p className="text-sm font-bold text-[#E26B4A]">RESERVATION</p>
@@ -163,7 +173,8 @@ function ReservationDetailPage() {
                 예약 #{reservation.id}
               </h1>
               <p className="mt-3 text-sm leading-6 text-[#6F675F]">
-                보호자 {reservation.guardianId} · 시터 {reservation.sitterId}
+                보호자 {reservation.guardianId} · 시터 프로필{' '}
+                {reservation.sitterProfileId} · {careTypeLabels[reservation.careType]}
               </p>
             </div>
             <span className="w-fit rounded-full bg-[#F4E9DE] px-3 py-1 text-xs font-bold text-[#6F675F]">
@@ -175,7 +186,7 @@ function ReservationDetailPage() {
             <div className="rounded-2xl bg-[#FAF6F1] p-4">
               <dt className="text-xs font-bold text-[#9B8E82]">결제 상태</dt>
               <dd className="mt-2 text-lg font-bold text-[#2A2622]">
-                {reservation.paymentStatus ?? '미정'}
+                {getPaymentLabel(reservation)}
               </dd>
             </div>
             <div className="rounded-2xl bg-[#FAF6F1] p-4">
@@ -193,7 +204,7 @@ function ReservationDetailPage() {
           </dl>
         </div>
 
-        <aside className="rounded-[28px] border border-[#E7DCD1] bg-white p-6 shadow-sm">
+        <aside className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
           <p className="text-sm font-bold text-[#E26B4A]">ACTIONS</p>
           <h2 className="mt-3 text-xl font-bold text-[#2A2622]">상태 변경</h2>
           <div className="mt-5 grid gap-3">
@@ -203,7 +214,7 @@ function ReservationDetailPage() {
               onClick={handleConfirm}
               className="rounded-2xl bg-[#E26B4A] px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#D8B6A9]"
             >
-              예약 확정
+              결제 확인
             </button>
             <button
               type="button"
@@ -281,7 +292,7 @@ function ReservationDetailPage() {
       )}
 
       <section className="mt-6 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-[28px] border border-[#E7DCD1] bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="text-sm font-bold text-[#E26B4A]">PETS</p>
@@ -314,7 +325,7 @@ function ReservationDetailPage() {
           </div>
         </div>
 
-        <div className="rounded-[28px] border border-[#E7DCD1] bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="text-sm font-bold text-[#E26B4A]">TIME SLOTS</p>

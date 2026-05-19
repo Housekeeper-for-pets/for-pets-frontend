@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { searchPosts } from '../api';
+import RegionSelect from '../components/RegionSelect';
 import {
   careTypeLabels,
   getRegionLabel,
   postStatusLabels,
-  regionOptions,
 } from '../constants/options';
 import type { CareType, Post, PostSearchQuery, PostStatus, Region } from '../types';
 
@@ -41,7 +41,12 @@ const buildQuery = (query: PostSearchQuery): PostSearchQuery => {
 
 // 공고 목록을 검색하고 열린 공고를 확인하는 페이지입니다.
 function PostsPage() {
-  const [query, setQuery] = useState<PostSearchQuery>(initialQuery);
+  const [searchParams] = useSearchParams();
+  const keywordFromUrl = searchParams.get('keyword') ?? undefined;
+  const [query, setQuery] = useState<PostSearchQuery>(() => ({
+    ...initialQuery,
+    keyword: keywordFromUrl,
+  }));
   const [posts, setPosts] = useState<Post[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,8 +75,17 @@ function PostsPage() {
   };
 
   useEffect(() => {
-    void fetchPosts(query);
-  }, []);
+    const nextQuery: PostSearchQuery = {
+      ...initialQuery,
+      keyword: keywordFromUrl,
+    };
+    const timerId = window.setTimeout(() => {
+      setQuery(nextQuery);
+      void fetchPosts(nextQuery);
+    }, 0);
+
+    return () => window.clearTimeout(timerId);
+  }, [keywordFromUrl]);
 
   // 검색 폼 제출 시 첫 페이지 기준으로 공고 목록을 다시 조회합니다.
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -99,7 +113,7 @@ function PostsPage() {
       </section>
 
       <form
-        className="mt-6 grid gap-3 rounded-[28px] border border-[#E7DCD1] bg-white p-5 shadow-sm md:grid-cols-[1fr_1fr_1fr_1fr_auto]"
+        className="mt-6 grid gap-3 rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm lg:grid-cols-[1fr_2fr_1fr_1fr_auto]"
         onSubmit={handleSubmit}
       >
         <input
@@ -112,26 +126,18 @@ function PostsPage() {
           }
         />
 
-        <select
-          aria-label="지역"
-          className={selectClassName}
-          value={query.region ?? ''}
-          onChange={(event) =>
+        <RegionSelect
+          idPrefix="post-search-region"
+          selectClassName={selectClassName}
+          value={query.region}
+          allLabel="전체 지역"
+          onChange={(value) =>
             setQuery((prevQuery) => ({
               ...prevQuery,
-              region: event.target.value ? (event.target.value as Region) : undefined,
+              region: value as Region | undefined,
             }))
           }
-        >
-          <option value="">전체 지역</option>
-          {regionOptions
-            .filter((option) => option.value !== 'UNKNOWN')
-            .map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-        </select>
+        />
 
         <select
           aria-label="돌봄 유형"
@@ -185,13 +191,13 @@ function PostsPage() {
 
       <section className="mt-5 grid gap-4">
         {isLoading && (
-          <p className="rounded-[24px] bg-white p-5 text-sm text-[#6F675F] shadow-sm">
+          <p className="rounded-2xl bg-white p-5 text-sm text-[#6F675F] shadow-sm">
             공고 목록을 불러오는 중입니다.
           </p>
         )}
 
         {!isLoading && posts.length === 0 && (
-          <p className="rounded-[24px] bg-white p-5 text-sm leading-6 text-[#6F675F] shadow-sm">
+          <p className="rounded-2xl bg-white p-5 text-sm leading-6 text-[#6F675F] shadow-sm">
             조건에 맞는 공고가 없습니다.
           </p>
         )}
@@ -199,7 +205,7 @@ function PostsPage() {
         {posts.map((post) => (
           <article
             key={post.id}
-            className="rounded-[24px] border border-[#E7DCD1] bg-white p-5 shadow-sm"
+            className="rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm"
           >
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
               <div>

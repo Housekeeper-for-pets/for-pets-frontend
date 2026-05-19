@@ -14,7 +14,7 @@ export const getMyInfo = async () => {
   return response.data;
 };
 
-// 현재 로그인한 회원의 이름과 전화번호를 수정합니다.
+// 현재 로그인한 회원의 닉네임, 전화번호, 성별, 지역을 수정합니다.
 export const updateMyInfo = async (request: UpdateMemberRequest) => {
   const response = await axiosInstance.put<ApiResponse<Member>>(
     '/members/me',

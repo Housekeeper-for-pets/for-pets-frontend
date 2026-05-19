@@ -1,4 +1,5 @@
 import type {
+  CareType,
   Id,
   ISODateTimeString,
   PageQuery,
@@ -15,9 +16,7 @@ export type ReservationStatus =
 
 export type ReservationSource = 'CARE_REQUEST' | 'PROPOSAL';
 
-export type PaymentStatus = 'WAITING_GUARDIAN' | 'WAITING_SITTER' | 'BOTH_PAID';
-
-export type CancelCategory = 'PERSONAL' | 'SCHEDULE_CHANGE' | 'EMERGENCY' | 'OTHER';
+export type CancelCategory = 'PERSONAL' | 'SCHEDULE_CHANGE' | 'UNAVOIDABLE' | 'OTHER';
 
 export type CanceledBy = 'GUARDIAN' | 'SITTER';
 
@@ -28,39 +27,27 @@ export interface ReservationSearchQuery extends PageQuery {
 export interface Reservation {
   id: Id;
   guardianId: Id;
-  sitterId: Id;
+  sitterMemberId?: Id;
+  sitterProfileId: Id;
+  careType: CareType;
   status: ReservationStatus;
+  source: ReservationSource;
   guardianPaid?: boolean;
   sitterPaid?: boolean;
-  paymentStatus?: PaymentStatus;
   cancelReason?: string | null;
   cancelCategory?: CancelCategory | null;
   canceledBy?: CanceledBy | null;
   pets: PetSnapshot[];
   timeSlots: TimeSlotResponse[];
+  confirmedAt?: ISODateTimeString | null;
+  completedAt?: ISODateTimeString | null;
+  canceledAt?: ISODateTimeString | null;
+  expiredAt?: ISODateTimeString | null;
   createdAt?: ISODateTimeString;
   updatedAt?: ISODateTimeString;
-}
-
-export interface ReservationStatusResponse {
-  id: Id;
-  status: ReservationStatus;
-  guardianPaid?: boolean;
-  sitterPaid?: boolean;
-  confirmedAt?: ISODateTimeString;
-  completedAt?: ISODateTimeString;
 }
 
 export interface CancelReservationRequest {
   cancelReason: string;
   cancelCategory: CancelCategory;
-}
-
-export interface CancelReservationResponse {
-  id: Id;
-  status: 'CANCELED';
-  cancelReason: string;
-  cancelCategory: CancelCategory;
-  canceledBy: CanceledBy;
-  canceledAt: ISODateTimeString;
 }

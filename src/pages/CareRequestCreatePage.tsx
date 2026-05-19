@@ -13,6 +13,7 @@ const initialTimeSlot: TimeSlotRequest = {
 const initialForm: CareRequestCreateRequest = {
   petIds: [],
   careType: 'VISIT',
+  requestPrice: 0,
   message: '',
   timeSlots: [initialTimeSlot],
 };
@@ -120,6 +121,10 @@ function CareRequestCreatePage() {
       return '요청할 반려동물을 1마리 이상 선택해 주세요.';
     }
 
+    if (!form.requestPrice || form.requestPrice <= 0) {
+      return '요청 금액을 1원 이상 입력해 주세요.';
+    }
+
     const hasEmptyTimeSlot = form.timeSlots.some(
       (timeSlot) => !timeSlot.careDate || !timeSlot.startTime || !timeSlot.endTime,
     );
@@ -170,7 +175,7 @@ function CareRequestCreatePage() {
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-8">
-      <section className="rounded-[28px] border border-[#E7DCD1] bg-white p-6 shadow-sm">
+      <section className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
           <div>
             <p className="text-sm font-bold text-[#E26B4A]">CARE REQUEST</p>
@@ -267,6 +272,28 @@ function CareRequestCreatePage() {
               ))}
             </div>
           </fieldset>
+
+          <label className="block" htmlFor="requestPrice">
+            <span className="text-sm font-bold text-[#2A2622]">요청 금액</span>
+            <input
+              id="requestPrice"
+              className={`mt-3 ${inputClassName}`}
+              type="number"
+              min={1}
+              step={1000}
+              placeholder="예: 80000"
+              value={form.requestPrice || ''}
+              onChange={(event) =>
+                setForm((prevForm) => ({
+                  ...prevForm,
+                  requestPrice: Number(event.target.value),
+                }))
+              }
+            />
+            <p className="mt-2 text-xs leading-5 text-[#8A8178]">
+              백엔드 돌봄 요청 API에서 필수로 받는 제안 금액입니다.
+            </p>
+          </label>
 
           <fieldset>
             <div className="flex items-center justify-between gap-4">

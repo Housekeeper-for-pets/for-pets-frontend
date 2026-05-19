@@ -2,20 +2,14 @@ import { axiosInstance } from './axiosInstance';
 import type {
   ApiResponse,
   CancelReservationRequest,
-  CancelReservationResponse,
   Id,
-  PageResponse,
   Reservation,
-  ReservationSearchQuery,
-  ReservationStatusResponse,
 } from '../types';
 
 // 현재 로그인한 사용자의 예약 목록을 조회합니다.
-export const getMyReservations = async (query?: ReservationSearchQuery) => {
-  const response = await axiosInstance.get<ApiResponse<PageResponse<Reservation>>>(
-    '/reservations/me',
-    { params: query },
-  );
+export const getMyReservations = async () => {
+  const response =
+    await axiosInstance.get<ApiResponse<Reservation[]>>('/reservations/me');
 
   return response.data;
 };
@@ -31,7 +25,7 @@ export const getReservation = async (reservationId: Id) => {
 
 // PENDING 상태의 예약을 CONFIRMED 상태로 확정합니다.
 export const confirmReservation = async (reservationId: Id) => {
-  const response = await axiosInstance.patch<ApiResponse<ReservationStatusResponse>>(
+  const response = await axiosInstance.patch<ApiResponse<Reservation>>(
     `/reservations/${reservationId}/confirm`,
   );
 
@@ -40,7 +34,7 @@ export const confirmReservation = async (reservationId: Id) => {
 
 // 시터가 CONFIRMED 상태의 예약을 COMPLETED 상태로 완료 처리합니다.
 export const completeReservation = async (reservationId: Id) => {
-  const response = await axiosInstance.patch<ApiResponse<ReservationStatusResponse>>(
+  const response = await axiosInstance.patch<ApiResponse<Reservation>>(
     `/reservations/${reservationId}/complete`,
   );
 
@@ -52,7 +46,7 @@ export const cancelReservation = async (
   reservationId: Id,
   request: CancelReservationRequest,
 ) => {
-  const response = await axiosInstance.patch<ApiResponse<CancelReservationResponse>>(
+  const response = await axiosInstance.patch<ApiResponse<Reservation>>(
     `/reservations/${reservationId}/cancel`,
     request,
   );

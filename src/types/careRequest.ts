@@ -12,6 +12,7 @@ export type CareRequestStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELED'
 export interface CareRequestCreateRequest {
   petIds: Id[];
   careType: CareType;
+  requestPrice: number;
   message?: string;
   timeSlots: TimeSlotRequest[];
 }
@@ -21,6 +22,7 @@ export interface CareRequest {
   memberId: Id;
   sitterProfileId: Id;
   careType: CareType;
+  requestPrice: number;
   message?: string;
   status: CareRequestStatus;
   pets: PetSnapshot[];
