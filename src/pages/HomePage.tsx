@@ -57,7 +57,12 @@ function PublicHome() {
     <main className="mx-auto max-w-6xl px-5 py-8 lg:px-8">
       <section className="grid gap-8 py-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
         <div>
-          <p className="fp-kicker">FORPETS MVP</p>
+          <img
+            src="/forpets-logo-balanced.png"
+            alt="포펫츠 로고"
+            className="h-28 w-28 rounded-3xl object-cover shadow-sm shadow-[#D96F4F]/10"
+          />
+          <p className="fp-kicker mt-5">FORPETS MVP</p>
           <h1 className="mt-4 max-w-2xl text-4xl font-black leading-tight tracking-tight text-[#2A2622] md:text-5xl">
             보호자와 펫시터가 조건으로 만나는 케어 매칭 플랫폼
           </h1>
@@ -83,6 +88,13 @@ function PublicHome() {
         </div>
 
         <div className="fp-shell-card rounded-2xl p-5">
+          <div className="mb-5 overflow-hidden rounded-2xl bg-[#D96F4F]/10">
+            <img
+              src="/forpets-logo.png"
+              alt="포펫츠 로고"
+              className="h-64 w-full object-cover object-center"
+            />
+          </div>
           <div className="flex items-center justify-between border-b border-[#EFE5DA] pb-4">
             <div>
               <p className="fp-kicker">MATCHING FLOW</p>
@@ -128,7 +140,12 @@ function SignedInHome() {
     <main className="mx-auto max-w-6xl px-5 py-7 lg:px-8">
       <section className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <p className="fp-kicker">HOME</p>
+          <img
+            src="/forpets-logo-balanced.png"
+            alt="포펫츠 로고"
+            className="h-28 w-28 rounded-3xl object-cover shadow-sm shadow-[#D96F4F]/10"
+          />
+          <p className="fp-kicker mt-5">HOME</p>
           <h1 className="mt-3 text-3xl font-black tracking-tight text-[#2A2622]">
             매칭을 시작해볼까요?
           </h1>
