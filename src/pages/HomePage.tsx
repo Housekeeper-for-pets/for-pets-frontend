@@ -88,13 +88,6 @@ function PublicHome() {
         </div>
 
         <div className="fp-shell-card rounded-2xl p-5">
-          <div className="mb-5 overflow-hidden rounded-2xl bg-[#D96F4F]/10">
-            <img
-              src="/forpets-logo.png"
-              alt="포펫츠 로고"
-              className="h-64 w-full object-cover object-center"
-            />
-          </div>
           <div className="flex items-center justify-between border-b border-[#EFE5DA] pb-4">
             <div>
               <p className="fp-kicker">MATCHING FLOW</p>
