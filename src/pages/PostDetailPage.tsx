@@ -1,13 +1,22 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { createProposal, getPost, getPostProposals } from '../api';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import {
+  acceptProposal,
+  closePost,
+  createProposal,
+  deletePost,
+  getMyInfo,
+  getPost,
+  getPostProposals,
+  rejectProposal,
+} from '../api';
 import {
   careTypeLabels,
   getRegionLabel,
   postStatusLabels,
 } from '../constants/options';
-import type { Post, Proposal, ProposalRequest } from '../types';
+import type { Member, Post, Proposal, ProposalRequest } from '../types';
 
 const initialProposalForm: ProposalRequest = {
   proposedPrice: 50000,
@@ -26,8 +35,10 @@ const proposalStatusLabels = {
 
 // 공고 상세를 보여주고 시터가 제안을 등록할 수 있는 페이지입니다.
 function PostDetailPage() {
+  const navigate = useNavigate();
   const { postId } = useParams<{ postId: string }>();
   const [post, setPost] = useState<Post | null>(null);
+  const [currentMember, setCurrentMember] = useState<Member | null>(null);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [proposalForm, setProposalForm] =
     useState<ProposalRequest>(initialProposalForm);
@@ -37,6 +48,8 @@ function PostDetailPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [proposalErrorMessage, setProposalErrorMessage] = useState('');
   const [proposalSuccessMessage, setProposalSuccessMessage] = useState('');
+  const [ownerActionMessage, setOwnerActionMessage] = useState('');
+  const [ownerActionErrorMessage, setOwnerActionErrorMessage] = useState('');
 
   // URL의 공고 ID로 공고 상세와 제안 목록을 조회합니다.
   useEffect(() => {
@@ -83,9 +96,24 @@ function PostDetailPage() {
       }
     };
 
+    const fetchCurrentMember = async () => {
+      try {
+        const result = await getMyInfo();
+
+        if (result.success) {
+          setCurrentMember(result.data);
+        }
+      } catch {
+        // 비로그인/토큰 오류여도 공개 상세 화면은 유지합니다.
+      }
+    };
+
     void fetchPostDetail();
     void fetchProposals();
+    void fetchCurrentMember();
   }, [postId]);
+
+  const isOwner = Boolean(post && currentMember?.id === post.memberId);
 
   // 제안 등록 전 필수 입력값을 확인합니다.
   const validateProposal = () => {
@@ -131,6 +159,93 @@ function PostDetailPage() {
       setProposalErrorMessage('제안 등록 중 문제가 발생했습니다.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const refreshPostAndProposals = async () => {
+    if (!postId) return;
+
+    const [postResult, proposalResult] = await Promise.all([
+      getPost(Number(postId)),
+      getPostProposals(Number(postId)),
+    ]);
+
+    if (postResult.success) {
+      setPost(postResult.data);
+    }
+
+    if (proposalResult.success) {
+      setProposals(proposalResult.data);
+    }
+  };
+
+  const handleClosePost = async () => {
+    if (!post) return;
+
+    setOwnerActionMessage('');
+    setOwnerActionErrorMessage('');
+
+    try {
+      const result = await closePost(post.id);
+
+      if (result.success) {
+        setPost(result.data);
+        setOwnerActionMessage('공고가 마감되었습니다.');
+        return;
+      }
+
+      setOwnerActionErrorMessage(result.error.message);
+    } catch {
+      setOwnerActionErrorMessage('공고 마감 중 문제가 발생했습니다.');
+    }
+  };
+
+  const handleDeletePost = async () => {
+    if (!post || !window.confirm('공고를 삭제할까요?')) return;
+
+    setOwnerActionMessage('');
+    setOwnerActionErrorMessage('');
+
+    try {
+      const result = await deletePost(post.id);
+
+      if (result.success) {
+        navigate('/posts');
+        return;
+      }
+
+      setOwnerActionErrorMessage(result.error.message);
+    } catch {
+      setOwnerActionErrorMessage('공고 삭제 중 문제가 발생했습니다.');
+    }
+  };
+
+  const handleProposalDecision = async (
+    proposalId: number,
+    action: 'accept' | 'reject',
+  ) => {
+    setOwnerActionMessage('');
+    setOwnerActionErrorMessage('');
+
+    try {
+      const result =
+        action === 'accept'
+          ? await acceptProposal(proposalId)
+          : await rejectProposal(proposalId);
+
+      if (result.success) {
+        await refreshPostAndProposals();
+        setOwnerActionMessage(
+          action === 'accept'
+            ? '제안을 수락했습니다. 예약이 생성되었습니다.'
+            : '제안을 거절했습니다.',
+        );
+        return;
+      }
+
+      setOwnerActionErrorMessage(result.error.message);
+    } catch {
+      setOwnerActionErrorMessage('제안 상태 변경 중 문제가 발생했습니다.');
     }
   };
 
@@ -198,12 +313,45 @@ function PostDetailPage() {
         </div>
 
         <aside className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
-          <p className="text-sm font-bold text-[#E26B4A]">PROPOSAL</p>
-          <h2 className="mt-3 text-xl font-bold text-[#2A2622]">제안 등록</h2>
+          <p className="text-sm font-bold text-[#E26B4A]">
+            {isOwner ? 'OWNER TOOLS' : 'PROPOSAL'}
+          </p>
+          <h2 className="mt-3 text-xl font-bold text-[#2A2622]">
+            {isOwner ? '공고 관리' : '제안 등록'}
+          </h2>
           <p className="mt-2 text-sm leading-6 text-[#6F675F]">
-            가능한 공고라면 제안 금액과 메시지를 보내 보호자에게 지원할 수 있습니다.
+            {isOwner
+              ? '공고 정보를 수정하거나 마감하고, 들어온 제안을 처리할 수 있습니다.'
+              : '가능한 공고라면 제안 금액과 메시지를 보내 보호자에게 지원할 수 있습니다.'}
           </p>
 
+          {isOwner && (
+            <div className="mt-5 grid gap-3">
+              <Link
+                to={`/posts/${post.id}/edit`}
+                className="rounded-2xl bg-[#2A2622] px-5 py-3 text-center text-sm font-bold text-white"
+              >
+                공고 수정
+              </Link>
+              <button
+                type="button"
+                onClick={handleClosePost}
+                disabled={post.status === 'CLOSED'}
+                className="rounded-2xl border border-[#E7DCD1] px-5 py-3 text-sm font-bold text-[#6F675F] disabled:cursor-not-allowed disabled:bg-[#F4E9DE]"
+              >
+                공고 마감
+              </button>
+              <button
+                type="button"
+                onClick={handleDeletePost}
+                className="rounded-2xl bg-[#FFF0EA] px-5 py-3 text-sm font-bold text-[#B44727]"
+              >
+                공고 삭제
+              </button>
+            </div>
+          )}
+
+          {!isOwner && (
           <form className="mt-5 space-y-4" onSubmit={handleProposalSubmit}>
             <label className="block" htmlFor="proposedPrice">
               <span className="text-sm font-bold text-[#2A2622]">제안 금액</span>
@@ -257,6 +405,18 @@ function PostDetailPage() {
               {isSubmitting ? '제안 등록 중...' : '제안 보내기'}
             </button>
           </form>
+          )}
+
+          {ownerActionErrorMessage && (
+            <p className="mt-4 rounded-2xl bg-[#FFF0EA] px-4 py-3 text-sm font-medium text-[#B44727]">
+              {ownerActionErrorMessage}
+            </p>
+          )}
+          {ownerActionMessage && (
+            <p className="mt-4 rounded-2xl bg-[#EEF7EA] px-4 py-3 text-sm font-medium text-[#3F5732]">
+              {ownerActionMessage}
+            </p>
+          )}
         </aside>
       </section>
 
@@ -366,6 +526,24 @@ function PostDetailPage() {
                   {proposalStatusLabels[proposal.status]}
                 </span>
               </div>
+              {isOwner && proposal.status === 'PENDING' && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleProposalDecision(proposal.id, 'accept')}
+                    className="rounded-full bg-[#E26B4A] px-4 py-2 text-xs font-bold text-white"
+                  >
+                    수락
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleProposalDecision(proposal.id, 'reject')}
+                    className="rounded-full border border-[#E7DCD1] px-4 py-2 text-xs font-bold text-[#6F675F]"
+                  >
+                    거절
+                  </button>
+                </div>
+              )}
             </article>
           ))}
         </div>

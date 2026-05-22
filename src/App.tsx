@@ -34,6 +34,7 @@ function App() {
           <Route path="/posts" element={<PostsPage />} />
           <Route path="/posts/new" element={<PostCreatePage />} />
           <Route path="/posts/:postId" element={<PostDetailPage />} />
+          <Route path="/posts/:postId/edit" element={<PostCreatePage />} />
           <Route path="/reservations" element={<ReservationsPage />} />
           <Route path="/reservations/:reservationId" element={<ReservationDetailPage />} />
           <Route
