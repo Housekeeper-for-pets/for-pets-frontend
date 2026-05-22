@@ -10,6 +10,7 @@ interface RegionSelectProps {
   emptyValue?: Region;
   allLabel?: string;
   helperText?: string;
+  disabled?: boolean;
 }
 
 // 현재 백엔드 Region enum은 서울 25개 구만 지원하므로, 전송 가능한 지역만 노출합니다.
@@ -31,6 +32,7 @@ function RegionSelect({
   emptyValue,
   allLabel = '지역 선택',
   helperText = '현재 백엔드 지원 지역은 서울특별시 25개 구입니다.',
+  disabled = false,
 }: RegionSelectProps) {
   const selectedGroup = findSelectedGroup(value);
   const [pendingGroupLabel, setPendingGroupLabel] = useState('');
@@ -46,6 +48,7 @@ function RegionSelect({
         <select
           id={`${idPrefix}-province`}
           className={selectClassName}
+          disabled={disabled}
           value={selectedGroupLabel}
           onChange={(event) => {
             setPendingGroupLabel(event.target.value);
@@ -72,7 +75,7 @@ function RegionSelect({
         <select
           id={`${idPrefix}-district`}
           className={selectClassName}
-          disabled={!selectedGroupLabel}
+          disabled={disabled || !selectedGroupLabel}
           value={value && value !== emptyValue ? value : ''}
           onChange={(event) => {
             onChange(event.target.value ? (event.target.value as Region) : emptyValue);

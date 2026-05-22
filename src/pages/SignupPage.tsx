@@ -12,7 +12,7 @@ const initialForm: SignupRequest = {
   password: '',
   nickname: '',
   phone: '',
-  gender: 'MALE',
+  gender: 'UNKNOWN',
   region: 'UNKNOWN',
 };
 
@@ -129,6 +129,7 @@ function SignupPage() {
                 updateField('gender', event.target.value as MemberGender)
               }
             >
+              <option value="UNKNOWN">선택 안 함</option>
               <option value="MALE">남성</option>
               <option value="FEMALE">여성</option>
             </select>

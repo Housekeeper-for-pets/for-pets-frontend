@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { createPost, getMyPets } from '../api';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { createPost, getMyPets, getPost, updatePost } from '../api';
 import { careTypeLabels } from '../constants/options';
 import type { CareType, Pet, PostRequest, TimeSlotRequest } from '../types';
 
@@ -26,9 +26,12 @@ const inputClassName =
 // 보호자가 시터들의 제안을 받을 케어 공고를 작성하는 페이지입니다.
 function PostCreatePage() {
   const navigate = useNavigate();
+  const { postId } = useParams<{ postId: string }>();
+  const isEditMode = Boolean(postId);
   const [pets, setPets] = useState<Pet[]>([]);
   const [form, setForm] = useState<PostRequest>(initialForm);
   const [isLoadingPets, setIsLoadingPets] = useState(true);
+  const [isLoadingPost, setIsLoadingPost] = useState(isEditMode);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -53,6 +56,43 @@ function PostCreatePage() {
 
     void fetchPets();
   }, []);
+
+  // 수정 화면에서는 기존 공고 내용을 불러와 입력값을 채웁니다.
+  useEffect(() => {
+    if (!postId) return;
+
+    const fetchPost = async () => {
+      try {
+        const result = await getPost(Number(postId));
+
+        if (result.success) {
+          setForm({
+            title: result.data.title,
+            content: result.data.content,
+            petIds: result.data.pets
+              .map((pet) => pet.petId ?? pet.id)
+              .filter((petId): petId is number => typeof petId === 'number'),
+            careType: result.data.careType,
+            budgetAmount: result.data.budgetAmount,
+            timeSlots: result.data.timeSlots.map((timeSlot) => ({
+              careDate: timeSlot.careDate,
+              startTime: timeSlot.startTime,
+              endTime: timeSlot.endTime,
+            })),
+          });
+          return;
+        }
+
+        setErrorMessage(result.error.message);
+      } catch {
+        setErrorMessage('공고 정보를 불러오지 못했습니다.');
+      } finally {
+        setIsLoadingPost(false);
+      }
+    };
+
+    void fetchPost();
+  }, [postId]);
 
   // 공고에 포함할 반려동물 선택 상태를 변경합니다.
   const togglePet = (petId: number) => {
@@ -140,20 +180,35 @@ function PostCreatePage() {
     setIsSubmitting(true);
 
     try {
-      const result = await createPost(form);
+      const result =
+        isEditMode && postId
+          ? await updatePost(Number(postId), form)
+          : await createPost(form);
 
       if (result.success) {
-        navigate('/posts');
+        navigate(isEditMode ? `/posts/${result.data.id}` : '/posts');
         return;
       }
 
       setErrorMessage(result.error.message);
     } catch {
-      setErrorMessage('공고 등록 중 문제가 발생했습니다.');
+      setErrorMessage(
+        isEditMode ? '공고 수정 중 문제가 발생했습니다.' : '공고 등록 중 문제가 발생했습니다.',
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoadingPost) {
+    return (
+      <main className="mx-auto max-w-5xl px-6 py-8">
+        <p className="rounded-2xl bg-white p-5 text-sm text-[#6F675F] shadow-sm">
+          공고 정보를 불러오는 중입니다.
+        </p>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-8">
@@ -161,9 +216,13 @@ function PostCreatePage() {
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
           <div>
             <p className="text-sm font-bold text-[#E26B4A]">NEW POST</p>
-            <h1 className="mt-3 text-3xl font-bold text-[#2A2622]">공고 작성</h1>
+            <h1 className="mt-3 text-3xl font-bold text-[#2A2622]">
+              {isEditMode ? '공고 수정' : '공고 작성'}
+            </h1>
             <p className="mt-3 text-sm leading-6 text-[#6F675F]">
-              케어 조건을 공고로 등록하면 시터들이 제안을 보낼 수 있습니다.
+              {isEditMode
+                ? '등록된 공고의 케어 조건을 최신 정보로 수정합니다.'
+                : '케어 조건을 공고로 등록하면 시터들이 제안을 보낼 수 있습니다.'}
             </p>
           </div>
           <Link
@@ -370,7 +429,13 @@ function PostCreatePage() {
             disabled={isSubmitting}
             className="w-full rounded-2xl bg-[#E26B4A] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#D95D3D] disabled:cursor-not-allowed disabled:bg-[#D8B6A9]"
           >
-            {isSubmitting ? '등록 중...' : '공고 등록'}
+            {isSubmitting
+              ? isEditMode
+                ? '수정 중...'
+                : '등록 중...'
+              : isEditMode
+                ? '공고 수정'
+                : '공고 등록'}
           </button>
         </form>
       </section>

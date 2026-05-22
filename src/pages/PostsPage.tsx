@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { searchPosts } from '../api';
+import { getMyPosts, searchPosts } from '../api';
 import RegionSelect from '../components/RegionSelect';
 import {
   careTypeLabels,
@@ -43,6 +43,7 @@ const buildQuery = (query: PostSearchQuery): PostSearchQuery => {
 function PostsPage() {
   const [searchParams] = useSearchParams();
   const keywordFromUrl = searchParams.get('keyword') ?? undefined;
+  const [viewMode, setViewMode] = useState<'all' | 'mine'>('all');
   const [query, setQuery] = useState<PostSearchQuery>(() => ({
     ...initialQuery,
     keyword: keywordFromUrl,
@@ -53,12 +54,23 @@ function PostsPage() {
   const [errorMessage, setErrorMessage] = useState('');
 
   // 현재 검색 조건으로 공고 목록을 조회합니다.
-  const fetchPosts = async (nextQuery: PostSearchQuery) => {
+  const fetchPosts = async (
+    nextQuery: PostSearchQuery,
+    nextViewMode = viewMode,
+  ) => {
     setIsLoading(true);
     setErrorMessage('');
 
     try {
-      const result = await searchPosts(buildQuery(nextQuery));
+      const result =
+        nextViewMode === 'mine'
+          ? await getMyPosts({
+              page: 0,
+              size: nextQuery.size,
+              sort: nextQuery.sort,
+              status: nextQuery.status,
+            })
+          : await searchPosts(buildQuery(nextQuery));
 
       if (result.success) {
         setPosts(result.data.content);
@@ -93,23 +105,40 @@ function PostsPage() {
     void fetchPosts(query);
   };
 
+  const handleViewModeChange = (nextViewMode: 'all' | 'mine') => {
+    setViewMode(nextViewMode);
+    void fetchPosts(query, nextViewMode);
+  };
+
   return (
     <main className="mx-auto max-w-6xl px-6 py-8">
       <section className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
         <div>
           <p className="text-sm font-bold text-[#E26B4A]">CARE POSTS</p>
-          <h1 className="mt-3 text-3xl font-bold text-[#2A2622]">공고 보기</h1>
+          <h1 className="mt-3 text-3xl font-bold text-[#2A2622]">
+            {viewMode === 'mine' ? '내 공고 관리' : '공고 보기'}
+          </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-[#6F675F]">
-            보호자가 등록한 케어 공고를 보고, 조건에 맞는 공고에 제안을 보낼 수
-            있습니다.
+            {viewMode === 'mine'
+              ? '내가 등록한 공고의 상태와 들어온 제안을 확인하고 관리할 수 있습니다.'
+              : '보호자가 등록한 케어 공고를 보고, 조건에 맞는 공고에 제안을 보낼 수 있습니다.'}
           </p>
         </div>
-        <Link
-          to="/posts/new"
-          className="w-fit rounded-full bg-[#E26B4A] px-5 py-3 text-sm font-bold text-white"
-        >
-          공고 작성
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => handleViewModeChange(viewMode === 'mine' ? 'all' : 'mine')}
+            className="w-fit rounded-full border border-[#E7DCD1] px-5 py-3 text-sm font-bold text-[#6F675F]"
+          >
+            {viewMode === 'mine' ? '전체 공고' : '내 공고'}
+          </button>
+          <Link
+            to="/posts/new"
+            className="w-fit rounded-full bg-[#E26B4A] px-5 py-3 text-sm font-bold text-white"
+          >
+            공고 작성
+          </Link>
+        </div>
       </section>
 
       <form
@@ -120,6 +149,7 @@ function PostsPage() {
           aria-label="검색 키워드"
           className={inputClassName}
           placeholder="검색어"
+          disabled={viewMode === 'mine'}
           value={query.keyword ?? ''}
           onChange={(event) =>
             setQuery((prevQuery) => ({ ...prevQuery, keyword: event.target.value }))
@@ -131,6 +161,7 @@ function PostsPage() {
           selectClassName={selectClassName}
           value={query.region}
           allLabel="전체 지역"
+          disabled={viewMode === 'mine'}
           onChange={(value) =>
             setQuery((prevQuery) => ({
               ...prevQuery,
@@ -142,6 +173,7 @@ function PostsPage() {
         <select
           aria-label="돌봄 유형"
           className={selectClassName}
+          disabled={viewMode === 'mine'}
           value={query.careType ?? ''}
           onChange={(event) =>
             setQuery((prevQuery) => ({
@@ -175,7 +207,7 @@ function PostsPage() {
           type="submit"
           className="rounded-2xl bg-[#2A2622] px-5 py-3 text-sm font-bold text-white"
         >
-          검색
+          {viewMode === 'mine' ? '조회' : '검색'}
         </button>
       </form>
 

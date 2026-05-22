@@ -24,6 +24,8 @@ function App() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<HomePage />} />
+        <Route path="/sitters" element={<SittersPage />} />
+        <Route path="/sitters/:sitterId" element={<SitterDetailPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/me" element={<MyProfilePage />} />
           <Route path="/activity" element={<MyActivityPage />} />
@@ -32,10 +34,9 @@ function App() {
           <Route path="/posts" element={<PostsPage />} />
           <Route path="/posts/new" element={<PostCreatePage />} />
           <Route path="/posts/:postId" element={<PostDetailPage />} />
+          <Route path="/posts/:postId/edit" element={<PostCreatePage />} />
           <Route path="/reservations" element={<ReservationsPage />} />
           <Route path="/reservations/:reservationId" element={<ReservationDetailPage />} />
-          <Route path="/sitters" element={<SittersPage />} />
-          <Route path="/sitters/:sitterId" element={<SitterDetailPage />} />
           <Route
             path="/sitters/:sitterId/requests/new"
             element={<CareRequestCreatePage />}

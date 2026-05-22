@@ -1,6 +1,6 @@
 import type { Id, ISODateTimeString } from './common';
 
-export type MemberGender = 'MALE' | 'FEMALE';
+export type MemberGender = 'MALE' | 'FEMALE' | 'UNKNOWN';
 
 export type MemberRole = 'MEMBER' | 'SITTER' | 'ADMIN';
 
@@ -44,6 +44,7 @@ export interface Member {
   region?: Region;
   role: MemberRole;
   status: MemberStatus;
+  couponCount: number;
   createdAt?: ISODateTimeString;
   updatedAt?: ISODateTimeString;
 }
@@ -53,6 +54,15 @@ export interface UpdateMemberRequest {
   phone?: string;
   gender?: MemberGender;
   region?: Region;
+}
+
+export interface UpdateMemberResponse {
+  id: Id;
+  nickname: string;
+  phone?: string;
+  gender?: MemberGender;
+  region?: Region;
+  updatedAt?: ISODateTimeString;
 }
 
 export interface ChangePasswordRequest {

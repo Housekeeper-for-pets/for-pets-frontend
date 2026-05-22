@@ -39,6 +39,9 @@ const possiblePetSizeOptions: Array<{ value: PossiblePetSize; label: string }> =
 const selectClassName =
   'w-full rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm text-[#2A2622] outline-none transition focus:border-[#E26B4A] focus:ring-4 focus:ring-[#F7D8CC]';
 
+const inputClassName =
+  'w-full rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm text-[#2A2622] outline-none transition placeholder:text-[#B0A59A] focus:border-[#E26B4A] focus:ring-4 focus:ring-[#F7D8CC]';
+
 // 빈 문자열은 쿼리 파라미터에서 제외해 백엔드 기본 검색 조건을 사용하게 합니다.
 const buildQuery = (query: SitterSearchQuery): SitterSearchQuery => {
   const nextQuery: SitterSearchQuery = {
@@ -117,7 +120,7 @@ function SittersPage() {
       </section>
 
       <form
-        className="mt-6 grid gap-3 rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm lg:grid-cols-[2fr_1fr_1fr_1fr_auto]"
+        className="mt-6 grid gap-3 rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm lg:grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_auto]"
         onSubmit={handleSubmit}
       >
         <RegionSelect
@@ -153,6 +156,36 @@ function SittersPage() {
             </option>
           ))}
         </select>
+
+        <input
+          aria-label="최소 시간당 요금"
+          className={inputClassName}
+          type="number"
+          min={0}
+          placeholder="최소 요금"
+          value={query.minPrice ?? ''}
+          onChange={(event) =>
+            setQuery((prevQuery) => ({
+              ...prevQuery,
+              minPrice: event.target.value ? Number(event.target.value) : undefined,
+            }))
+          }
+        />
+
+        <input
+          aria-label="최대 시간당 요금"
+          className={inputClassName}
+          type="number"
+          min={0}
+          placeholder="최대 요금"
+          value={query.maxPrice ?? ''}
+          onChange={(event) =>
+            setQuery((prevQuery) => ({
+              ...prevQuery,
+              maxPrice: event.target.value ? Number(event.target.value) : undefined,
+            }))
+          }
+        />
 
         <select
           aria-label="돌봄 가능한 크기"

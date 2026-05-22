@@ -3,8 +3,11 @@ import type { FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   changeMyPassword,
+  createCoupon,
   deleteMyAccount,
   getMyInfo,
+  issueCoupon,
+  revokeUserCoupon,
   updateMyInfo,
 } from '../api';
 import RegionSelect from '../components/RegionSelect';
@@ -20,13 +23,18 @@ import type {
 const initialProfileForm: UpdateMemberRequest = {
   nickname: '',
   phone: '',
-  gender: 'MALE',
+  gender: 'UNKNOWN',
   region: 'UNKNOWN',
 };
 
 const initialPasswordForm: ChangePasswordRequest = {
   currentPassword: '',
   newPassword: '',
+};
+
+const initialCouponForm = {
+  name: '10% 할인 쿠폰',
+  totalQuantity: 100,
 };
 
 const inputClassName =
@@ -38,7 +46,7 @@ const selectClassName =
 const toProfileForm = (member: Member): UpdateMemberRequest => ({
   nickname: member.nickname,
   phone: member.phone ?? '',
-  gender: member.gender ?? 'MALE',
+  gender: member.gender ?? 'UNKNOWN',
   region: member.region ?? 'UNKNOWN',
 });
 
@@ -63,21 +71,29 @@ function MyProfilePage() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [couponId, setCouponId] = useState('');
+  const [userCouponId, setUserCouponId] = useState('');
+  const [couponForm, setCouponForm] = useState(initialCouponForm);
+  const [isProcessingCoupon, setIsProcessingCoupon] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
+  const fetchMyInfo = async () => {
+    const result = await getMyInfo();
+
+    if (result.success) {
+      setMember(result.data);
+      setProfileForm(toProfileForm(result.data));
+      return;
+    }
+
+    setErrorMessage(result.error.message);
+  };
+
   useEffect(() => {
-    const fetchMyInfo = async () => {
+    const loadMyInfo = async () => {
       try {
-        const result = await getMyInfo();
-
-        if (result.success) {
-          setMember(result.data);
-          setProfileForm(toProfileForm(result.data));
-          return;
-        }
-
-        setErrorMessage(result.error.message);
+        await fetchMyInfo();
       } catch {
         setErrorMessage('내 정보를 불러오지 못했습니다.');
       } finally {
@@ -85,7 +101,7 @@ function MyProfilePage() {
       }
     };
 
-    void fetchMyInfo();
+    void loadMyInfo();
   }, []);
 
   const moveMode = (nextMode: AccountMode) => {
@@ -180,6 +196,102 @@ function MyProfilePage() {
     }
   };
 
+  const handleIssueCoupon = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    const parsedCouponId = Number(couponId);
+
+    if (!parsedCouponId) {
+      setErrorMessage('발급할 쿠폰 ID를 입력해 주세요.');
+      return;
+    }
+
+    setIsProcessingCoupon(true);
+
+    try {
+      const result = await issueCoupon(parsedCouponId);
+
+      if (result.success) {
+        await fetchMyInfo();
+        setCouponId('');
+        setSuccessMessage(
+          `${result.data.couponName}이 발급되었습니다. 보유 쿠폰 수량을 갱신했습니다.`,
+        );
+        return;
+      }
+
+      setErrorMessage(result.error.message);
+    } catch {
+      setErrorMessage('쿠폰 발급 중 문제가 발생했습니다.');
+    } finally {
+      setIsProcessingCoupon(false);
+    }
+  };
+
+  const handleCreateCoupon = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    if (!couponForm.name.trim() || couponForm.totalQuantity <= 0) {
+      setErrorMessage('쿠폰명과 발급 수량을 확인해 주세요.');
+      return;
+    }
+
+    setIsProcessingCoupon(true);
+
+    try {
+      const result = await createCoupon(couponForm);
+
+      if (result.success) {
+        setSuccessMessage(
+          `쿠폰 #${result.data.couponId} 생성 완료: ${result.data.name}`,
+        );
+        setCouponForm(initialCouponForm);
+        return;
+      }
+
+      setErrorMessage(result.error.message);
+    } catch {
+      setErrorMessage('쿠폰 생성 중 문제가 발생했습니다.');
+    } finally {
+      setIsProcessingCoupon(false);
+    }
+  };
+
+  const handleRevokeCoupon = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    const parsedUserCouponId = Number(userCouponId);
+
+    if (!parsedUserCouponId) {
+      setErrorMessage('회수할 유저 쿠폰 ID를 입력해 주세요.');
+      return;
+    }
+
+    setIsProcessingCoupon(true);
+
+    try {
+      const result = await revokeUserCoupon(parsedUserCouponId);
+
+      if (result.success) {
+        setUserCouponId('');
+        setSuccessMessage(`유저 쿠폰 #${result.data.userCouponId}이 회수되었습니다.`);
+        return;
+      }
+
+      setErrorMessage(result.error.message);
+    } catch {
+      setErrorMessage('쿠폰 회수 중 문제가 발생했습니다.');
+    } finally {
+      setIsProcessingCoupon(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <main className="mx-auto max-w-6xl px-6 py-8">
@@ -240,6 +352,12 @@ function MyProfilePage() {
                   {getRegionLabel(member.region)}
                 </dd>
               </div>
+              <div className="rounded-2xl bg-[#FAF6F1] p-4">
+                <dt className="text-xs font-bold text-[#9B8E82]">보유 쿠폰</dt>
+                <dd className="mt-1 text-sm font-bold text-[#2A2622]">
+                  {member.couponCount}장
+                </dd>
+              </div>
             </dl>
             <div className="mt-6 flex flex-wrap gap-3">
               <button
@@ -262,6 +380,97 @@ function MyProfilePage() {
                 {member.role === 'SITTER' ? '내 시터 프로필' : '시터 등록'}
               </Link>
             </div>
+          </article>
+
+          <article className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
+            <p className="text-sm font-bold text-[#E26B4A]">COUPONS</p>
+            <h2 className="mt-3 text-2xl font-bold text-[#2A2622]">
+              쿠폰 테스트
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[#6F675F]">
+              쿠폰 목록 API가 없어 발급할 쿠폰 ID를 직접 입력합니다.
+            </p>
+
+            <form className="mt-5 grid gap-3" onSubmit={handleIssueCoupon}>
+              <label className="block" htmlFor="couponId">
+                <span className="text-sm font-bold text-[#2A2622]">쿠폰 ID</span>
+                <input
+                  id="couponId"
+                  className={`mt-2 ${inputClassName}`}
+                  type="number"
+                  min={1}
+                  placeholder="예: 1"
+                  value={couponId}
+                  onChange={(event) => setCouponId(event.target.value)}
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={isProcessingCoupon}
+                className="rounded-2xl bg-[#E26B4A] px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#D8B6A9]"
+              >
+                쿠폰 발급
+              </button>
+            </form>
+
+            {member.role === 'ADMIN' && (
+              <div className="mt-6 space-y-5 border-t border-[#E7DCD1] pt-5">
+                <form className="grid gap-3" onSubmit={handleCreateCoupon}>
+                  <p className="text-sm font-bold text-[#2A2622]">관리자 쿠폰 생성</p>
+                  <input
+                    className={inputClassName}
+                    aria-label="쿠폰명"
+                    value={couponForm.name}
+                    onChange={(event) =>
+                      setCouponForm((prevForm) => ({
+                        ...prevForm,
+                        name: event.target.value,
+                      }))
+                    }
+                  />
+                  <input
+                    className={inputClassName}
+                    aria-label="전체 발급 수량"
+                    type="number"
+                    min={1}
+                    value={couponForm.totalQuantity}
+                    onChange={(event) =>
+                      setCouponForm((prevForm) => ({
+                        ...prevForm,
+                        totalQuantity: Number(event.target.value),
+                      }))
+                    }
+                  />
+                  <button
+                    type="submit"
+                    disabled={isProcessingCoupon}
+                    className="rounded-2xl bg-[#2A2622] px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#B0A59A]"
+                  >
+                    쿠폰 생성
+                  </button>
+                </form>
+
+                <form className="grid gap-3" onSubmit={handleRevokeCoupon}>
+                  <p className="text-sm font-bold text-[#2A2622]">유저 쿠폰 회수</p>
+                  <input
+                    className={inputClassName}
+                    aria-label="유저 쿠폰 ID"
+                    type="number"
+                    min={1}
+                    placeholder="UserCoupon ID"
+                    value={userCouponId}
+                    onChange={(event) => setUserCouponId(event.target.value)}
+                  />
+                  <button
+                    type="submit"
+                    disabled={isProcessingCoupon}
+                    className="rounded-2xl border border-[#E7DCD1] px-4 py-3 text-sm font-bold text-[#B44727] disabled:cursor-not-allowed disabled:text-[#B0A59A]"
+                  >
+                    쿠폰 회수
+                  </button>
+                </form>
+              </div>
+            )}
           </article>
 
           <aside className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
@@ -315,6 +524,7 @@ function MyProfilePage() {
               ['전화번호', member.phone || '미입력'],
               ['성별', member.gender || '미입력'],
               ['지역', getRegionLabel(member.region)],
+              ['보유 쿠폰', `${member.couponCount}장`],
               ['역할', member.role],
             ].map(([label, value]) => (
               <div key={label} className="rounded-2xl bg-[#FAF6F1] p-4">
@@ -394,6 +604,7 @@ function MyProfilePage() {
                     }))
                   }
                 >
+                  <option value="UNKNOWN">선택 안 함</option>
                   <option value="MALE">남성</option>
                   <option value="FEMALE">여성</option>
                 </select>

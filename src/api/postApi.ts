@@ -25,6 +25,16 @@ export const searchPosts = async (query?: PostSearchQuery) => {
   return response.data;
 };
 
+// 로그인한 보호자가 작성한 공고 목록을 조회합니다.
+export const getMyPosts = async (query?: PostSearchQuery) => {
+  const response = await axiosInstance.get<ApiResponse<PageResponse<Post>>>(
+    '/posts/me',
+    { params: query },
+  );
+
+  return response.data;
+};
+
 // 특정 공고의 상세 정보를 조회합니다.
 export const getPost = async (postId: Id) => {
   const response = await axiosInstance.get<ApiResponse<Post>>(`/posts/${postId}`);

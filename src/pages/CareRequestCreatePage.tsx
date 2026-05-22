@@ -280,7 +280,7 @@ function CareRequestCreatePage() {
               className={`mt-3 ${inputClassName}`}
               type="number"
               min={1}
-              step={1000}
+              step={1}
               placeholder="예: 80000"
               value={form.requestPrice || ''}
               onChange={(event) =>
