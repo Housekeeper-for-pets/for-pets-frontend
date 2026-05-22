@@ -32,6 +32,7 @@ export interface Reservation {
   careType: CareType;
   status: ReservationStatus;
   source: ReservationSource;
+  sourceId?: Id;
   guardianPaid?: boolean;
   sitterPaid?: boolean;
   cancelReason?: string | null;

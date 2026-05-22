@@ -1,7 +1,9 @@
 export type * from './auth';
 export type * from './careRequest';
 export type * from './common';
+export type * from './coupon';
 export type * from './member';
+export type * from './payment';
 export type * from './pet';
 export type * from './post';
 export type * from './proposal';

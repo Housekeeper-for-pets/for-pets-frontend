@@ -5,6 +5,7 @@ import type {
   Member,
   MessageResponse,
   UpdateMemberRequest,
+  UpdateMemberResponse,
 } from '../types';
 
 // 현재 로그인한 회원의 정보를 조회합니다.
@@ -16,7 +17,7 @@ export const getMyInfo = async () => {
 
 // 현재 로그인한 회원의 닉네임, 전화번호, 성별, 지역을 수정합니다.
 export const updateMyInfo = async (request: UpdateMemberRequest) => {
-  const response = await axiosInstance.put<ApiResponse<Member>>(
+  const response = await axiosInstance.put<ApiResponse<UpdateMemberResponse>>(
     '/members/me',
     request,
   );

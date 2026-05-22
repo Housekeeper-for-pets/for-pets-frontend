@@ -20,7 +20,7 @@ import type {
 const initialProfileForm: UpdateMemberRequest = {
   nickname: '',
   phone: '',
-  gender: 'MALE',
+  gender: 'UNKNOWN',
   region: 'UNKNOWN',
 };
 
@@ -38,7 +38,7 @@ const selectClassName =
 const toProfileForm = (member: Member): UpdateMemberRequest => ({
   nickname: member.nickname,
   phone: member.phone ?? '',
-  gender: member.gender ?? 'MALE',
+  gender: member.gender ?? 'UNKNOWN',
   region: member.region ?? 'UNKNOWN',
 });
 
@@ -240,6 +240,12 @@ function MyProfilePage() {
                   {getRegionLabel(member.region)}
                 </dd>
               </div>
+              <div className="rounded-2xl bg-[#FAF6F1] p-4">
+                <dt className="text-xs font-bold text-[#9B8E82]">보유 쿠폰</dt>
+                <dd className="mt-1 text-sm font-bold text-[#2A2622]">
+                  {member.couponCount}장
+                </dd>
+              </div>
             </dl>
             <div className="mt-6 flex flex-wrap gap-3">
               <button
@@ -315,6 +321,7 @@ function MyProfilePage() {
               ['전화번호', member.phone || '미입력'],
               ['성별', member.gender || '미입력'],
               ['지역', getRegionLabel(member.region)],
+              ['보유 쿠폰', `${member.couponCount}장`],
               ['역할', member.role],
             ].map(([label, value]) => (
               <div key={label} className="rounded-2xl bg-[#FAF6F1] p-4">
@@ -394,6 +401,7 @@ function MyProfilePage() {
                     }))
                   }
                 >
+                  <option value="UNKNOWN">선택 안 함</option>
                   <option value="MALE">남성</option>
                   <option value="FEMALE">여성</option>
                 </select>
