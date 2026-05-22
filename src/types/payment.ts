@@ -1,4 +1,5 @@
 import type { Id } from './common';
+import type { ReservationStatus } from './reservation';
 
 export type PaymentRole = 'GUARDIAN' | 'SITTER';
 
@@ -27,4 +28,14 @@ export interface PaymentResponse {
   finalAmount: number;
   provider: PaymentProvider;
   status: PaymentStatus;
+}
+
+export interface ConfirmPaymentRequest {
+  merchantUid: string;
+}
+
+export interface ConfirmPaymentResponse {
+  paymentId: Id;
+  status: PaymentStatus;
+  reservationStatus: ReservationStatus;
 }

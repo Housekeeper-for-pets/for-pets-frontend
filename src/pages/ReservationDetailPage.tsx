@@ -5,6 +5,7 @@ import { Link, useParams } from 'react-router-dom';
 import {
   cancelReservation,
   completeReservation,
+  confirmPayment,
   confirmReservation,
   createPayment,
   getMyInfo,
@@ -90,6 +91,18 @@ const getPaymentErrorMessage = (error: unknown) => {
   }
 
   return '결제 처리 중 문제가 발생했습니다.';
+};
+
+const getCreatePaymentFailureMessage = (message: string, code?: string) => {
+  if (code === 'DUPLICATE_PAYMENT_REQUEST') {
+    return [
+      message,
+      '이전 결제창 호출이 실패했어도 서버에는 READY 결제가 남아 있을 수 있습니다.',
+      '현재 백엔드는 READY 결제 취소/재사용 API가 없어 테스트 DB에서 해당 payments 행을 CANCELED 처리하거나 새 예약으로 다시 테스트해야 합니다.',
+    ].join(' ');
+  }
+
+  return message;
 };
 
 // 예약 상세 정보와 확정/완료/취소 액션을 제공하는 페이지입니다.
@@ -188,11 +201,19 @@ function ReservationDetailPage() {
       });
 
       if (!paymentResult.success) {
-        setErrorMessage(paymentResult.error.message);
+        setErrorMessage(
+          getCreatePaymentFailureMessage(
+            paymentResult.error.message,
+            paymentResult.error.code,
+          ),
+        );
         return;
       }
 
       const payment = paymentResult.data;
+      setActionMessage(
+        `${payment.finalAmount.toLocaleString()}원 결제창을 여는 중입니다.`,
+      );
       const portOneResponse = await PortOne.requestPayment({
         storeId: portOneConfig.storeId,
         channelKey: portOneConfig.channelKey,
@@ -233,20 +254,55 @@ function ReservationDetailPage() {
         return;
       }
 
-      const confirmResult = await confirmReservation(reservation.id);
+      const paymentConfirmResult = await confirmPayment({
+        merchantUid: payment.merchantUid,
+      });
 
-      if (!confirmResult.success) {
-        setErrorMessage(confirmResult.error.message);
+      if (paymentConfirmResult.success) {
+        const reservationResult = await getReservation(reservation.id);
+
+        if (reservationResult.success) {
+          setReservation(reservationResult.data);
+        } else {
+          setReservation((prevReservation) =>
+            prevReservation
+              ? {
+                  ...prevReservation,
+                  status: paymentConfirmResult.data.reservationStatus,
+                  guardianPaid:
+                    paymentRole === 'GUARDIAN' ? true : prevReservation.guardianPaid,
+                  sitterPaid:
+                    paymentRole === 'SITTER' ? true : prevReservation.sitterPaid,
+                }
+              : prevReservation,
+          );
+        }
+
+        setActionMessage(
+          `${paymentRoleLabels[paymentRole]} 결제가 검증되었습니다. ${
+            paymentConfirmResult.data.reservationStatus === 'CONFIRMED'
+              ? '예약이 확정되었습니다.'
+              : '상대방 결제가 끝나면 예약이 확정됩니다.'
+          }`,
+        );
         return;
       }
 
-      setReservation(confirmResult.data);
+      if (paymentConfirmResult.error.code !== 'NOT_FOUND') {
+        setErrorMessage(paymentConfirmResult.error.message);
+        return;
+      }
+
+      const legacyConfirmResult = await confirmReservation(reservation.id);
+
+      if (!legacyConfirmResult.success) {
+        setErrorMessage(legacyConfirmResult.error.message);
+        return;
+      }
+
+      setReservation(legacyConfirmResult.data);
       setActionMessage(
-        `${paymentRoleLabels[paymentRole]} 결제가 완료되었습니다. ${
-          confirmResult.data.status === 'CONFIRMED'
-            ? '예약이 확정되었습니다.'
-            : '상대방 결제가 끝나면 예약이 확정됩니다.'
-        }`,
+        '결제창은 완료되었지만 현재 연결된 백엔드에 /api/payments/confirm이 없어 기존 예약 확정 API로 처리했습니다.',
       );
     } catch (error) {
       console.error('[ReservationDetailPage] PortOne payment failed', error);
