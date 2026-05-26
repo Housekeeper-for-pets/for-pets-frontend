@@ -383,6 +383,30 @@ function MyProfilePage() {
           </article>
 
           <article className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
+            <p className="text-sm font-bold text-[#E26B4A]">PAYMENT & MONEY</p>
+            <h2 className="mt-3 text-2xl font-bold text-[#2A2622]">
+              결제와 정산
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[#6F675F]">
+              예약 결제 상태와 시터 정산 내역을 내 계정에서 바로 확인합니다.
+            </p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <Link
+                to="/payments"
+                className="rounded-2xl bg-[#2A2622] px-4 py-3 text-center text-sm font-bold text-white"
+              >
+                결제 내역
+              </Link>
+              <Link
+                to="/settlements"
+                className="rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-center text-sm font-bold text-[#2A2622]"
+              >
+                정산 내역
+              </Link>
+            </div>
+          </article>
+
+          <article className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
             <p className="text-sm font-bold text-[#E26B4A]">COUPONS</p>
             <h2 className="mt-3 text-2xl font-bold text-[#2A2622]">
               쿠폰 테스트
