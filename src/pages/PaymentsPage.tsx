@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { failPayment, getMyPayments } from '../api';
-import type { PaymentResponse, PaymentStatus } from '../types';
+import type { PaymentResponse, PaymentStatus, PaymentType } from '../types';
 
 const paymentStatusLabels: Record<PaymentStatus, string> = {
   READY: '결제 준비',
@@ -12,6 +12,11 @@ const paymentStatusLabels: Record<PaymentStatus, string> = {
   CANCELED: '취소',
   REFUNDED: '환불',
   EXPIRED: '만료',
+};
+
+const paymentTypeLabels: Record<PaymentType, string> = {
+  FULL: '보호자 결제',
+  DEPOSIT: '시터 예약금',
 };
 
 const inputClassName =
@@ -145,7 +150,10 @@ function PaymentsPage() {
               <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
                 <div>
                   <p className="text-xs font-bold text-[#E26B4A]">
-                    예약 #{payment.reservationId} · {payment.paymentRole}
+                    예약 #{payment.reservationId} ·{' '}
+                    {payment.paymentType
+                      ? paymentTypeLabels[payment.paymentType]
+                      : payment.paymentRole}
                   </p>
                   <h2 className="mt-2 text-lg font-bold text-[#2A2622]">
                     {payment.finalAmount.toLocaleString()}원
@@ -174,6 +182,12 @@ function PaymentsPage() {
                   ['예약 ID', selectedPayment.reservationId],
                   ['회원 ID', selectedPayment.memberId ?? '-'],
                   ['역할', selectedPayment.paymentRole],
+                  [
+                    '결제 유형',
+                    selectedPayment.paymentType
+                      ? paymentTypeLabels[selectedPayment.paymentType]
+                      : '-',
+                  ],
                   ['원금', `${selectedPayment.originalAmount.toLocaleString()}원`],
                   ['할인', `${selectedPayment.discountAmount.toLocaleString()}원`],
                   ['최종 결제액', `${selectedPayment.finalAmount.toLocaleString()}원`],
