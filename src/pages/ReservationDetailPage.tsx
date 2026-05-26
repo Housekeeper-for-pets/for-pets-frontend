@@ -236,7 +236,7 @@ function ReservationDetailPage() {
         currency: 'KRW',
         payMethod: 'CARD',
         windowType: {
-          pc: 'POPUP',
+          pc: 'IFRAME',
           mobile: 'REDIRECTION',
         },
         redirectUrl: window.location.href,
