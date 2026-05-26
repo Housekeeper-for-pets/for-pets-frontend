@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { getSitterProfile } from '../api';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { createOrGetChatRoom, getSitterProfile } from '../api';
 import {
   dayOfWeekLabels,
   getRegionLabel,
@@ -12,8 +12,10 @@ import type { SitterProfile } from '../types';
 
 // 특정 시터의 프로필과 가능 시간을 보여주는 상세 페이지입니다.
 function SitterDetailPage() {
+  const navigate = useNavigate();
   const { sitterId } = useParams<{ sitterId: string }>();
   const [sitter, setSitter] = useState<SitterProfile | null>(null);
+  const [isOpeningChat, setIsOpeningChat] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -44,6 +46,28 @@ function SitterDetailPage() {
 
     void fetchSitter();
   }, [sitterId]);
+
+  const handleOpenChat = async () => {
+    if (!sitter) return;
+
+    setErrorMessage('');
+    setIsOpeningChat(true);
+
+    try {
+      const result = await createOrGetChatRoom({ opponentId: sitter.memberId });
+
+      if (result.success) {
+        navigate('/chat');
+        return;
+      }
+
+      setErrorMessage(result.error.message);
+    } catch {
+      setErrorMessage('채팅방을 여는 중 문제가 발생했습니다.');
+    } finally {
+      setIsOpeningChat(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -120,6 +144,14 @@ function SitterDetailPage() {
           >
             요청 작성하기
           </Link>
+          <button
+            type="button"
+            onClick={() => void handleOpenChat()}
+            disabled={isOpeningChat}
+            className="mt-3 inline-flex w-full justify-center rounded-2xl border border-[#E7DCD1] px-4 py-3 text-sm font-bold text-[#6F675F] disabled:cursor-not-allowed disabled:text-[#B0A59A]"
+          >
+            {isOpeningChat ? '채팅방 여는 중...' : '채팅하기'}
+          </button>
         </aside>
       </section>
 

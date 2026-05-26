@@ -8,6 +8,8 @@ export type PossiblePetSize = PetSize | 'ALL';
 
 export type SitterProfileStatus = 'RESERVABLE' | 'NON_RESERVABLE';
 
+export type SitterApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
 export type DayOfWeek =
   | 'MONDAY'
   | 'TUESDAY'
@@ -35,6 +37,7 @@ export interface SitterProfile {
   possiblePetSize: PossiblePetSize;
   pricePerHour: number;
   status: SitterProfileStatus;
+  approvalStatus?: SitterApprovalStatus;
   schedules: SitterSchedule[];
   createdAt?: ISODateTimeString;
   updatedAt?: ISODateTimeString;
@@ -68,4 +71,26 @@ export interface ReplaceSitterSchedulesRequest {
 
 export interface SitterSchedule extends SitterScheduleRequest {
   id: Id;
+}
+
+export interface AdminSitterProfile {
+  id: Id;
+  memberId: Id;
+  region: Region;
+  introduction?: string;
+  experienceYears: number;
+  possiblePetType: PossiblePetType;
+  possiblePetSize: PossiblePetSize;
+  pricePerHour: number;
+  status: SitterProfileStatus;
+  approvalStatus: SitterApprovalStatus;
+  rejectReason?: string | null;
+  evaluatedBy?: Id | null;
+  evaluatedAt?: ISODateTimeString | null;
+  createdAt?: ISODateTimeString;
+  updatedAt?: ISODateTimeString;
+}
+
+export interface RejectSitterRequest {
+  rejectReason: string;
 }

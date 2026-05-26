@@ -23,15 +23,6 @@ export const getReservation = async (reservationId: Id) => {
   return response.data;
 };
 
-// PENDING 상태의 예약을 CONFIRMED 상태로 확정합니다.
-export const confirmReservation = async (reservationId: Id) => {
-  const response = await axiosInstance.patch<ApiResponse<Reservation>>(
-    `/reservations/${reservationId}/confirm`,
-  );
-
-  return response.data;
-};
-
 // 시터가 CONFIRMED 상태의 예약을 COMPLETED 상태로 완료 처리합니다.
 export const completeReservation = async (reservationId: Id) => {
   const response = await axiosInstance.patch<ApiResponse<Reservation>>(

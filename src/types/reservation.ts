@@ -10,6 +10,7 @@ import type { PetSnapshot } from './pet';
 export type ReservationStatus =
   | 'PENDING'
   | 'CONFIRMED'
+  | 'CANCEL_REQUESTED'
   | 'COMPLETED'
   | 'CANCELED'
   | 'EXPIRED';

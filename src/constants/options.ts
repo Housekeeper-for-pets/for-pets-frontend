@@ -11,6 +11,9 @@ import type {
   Region,
   ReservationStatus,
   CancelCategory,
+  SettlementStatus,
+  SettlementType,
+  SitterApprovalStatus,
   SitterProfileStatus,
 } from '../types';
 
@@ -396,6 +399,12 @@ export const sitterStatusLabels: Record<SitterProfileStatus, string> = {
   NON_RESERVABLE: '예약 불가',
 };
 
+export const sitterApprovalStatusLabels: Record<SitterApprovalStatus, string> = {
+  PENDING: '승인 대기',
+  APPROVED: '승인됨',
+  REJECTED: '거절됨',
+};
+
 export const careTypeLabels: Record<CareType, string> = {
   VISIT: '방문 돌봄',
   BOARDING: '위탁 돌봄',
@@ -423,9 +432,26 @@ export const proposalStatusLabels: Record<ProposalStatus, string> = {
 export const reservationStatusLabels: Record<ReservationStatus, string> = {
   PENDING: '대기 중',
   CONFIRMED: '확정됨',
+  CANCEL_REQUESTED: '취소 승인 대기',
   COMPLETED: '완료됨',
   CANCELED: '취소됨',
   EXPIRED: '만료됨',
+};
+
+export const settlementStatusLabels: Record<SettlementStatus, string> = {
+  READY: '정산 대기',
+  HOLD: '보류',
+  APPROVED: '승인됨',
+  PROCESSING: '처리 중',
+  COMPLETED: '완료',
+  FAILED: '실패',
+  CANCELED: '취소됨',
+};
+
+export const settlementTypeLabels: Record<SettlementType, string> = {
+  CARE_COMPLETION: '케어 완료 정산',
+  SITTER_CANCEL_PENALTY: '시터 취소 패널티',
+  OWNER_CANCEL_PENALTY: '보호자 취소 패널티',
 };
 
 export const cancelCategoryLabels: Record<CancelCategory, string> = {

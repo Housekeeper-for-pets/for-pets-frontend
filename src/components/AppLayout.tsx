@@ -11,11 +11,15 @@ const navItems = [
   { to: '/me', label: '내 계정', icon: 'user', group: '계정' },
   { to: '/activity', label: '요청/제안', icon: 'activity', group: '매칭' },
   { to: '/reservations', label: '예약 관리', icon: 'calendar', group: '매칭' },
+  { to: '/payments', label: '결제 내역', icon: 'payment', group: '정산' },
+  { to: '/settlements', label: '정산 내역', icon: 'settlement', group: '정산' },
+  { to: '/chat', label: '채팅', icon: 'chat', group: '매칭' },
   { to: '/posts', label: '공고 보기', icon: 'post', group: '매칭' },
   { to: '/sitters', label: '시터 찾기', icon: 'sitter', group: '매칭' },
+  { to: '/admin', label: '관리자', icon: 'badge', group: '관리' },
 ];
 
-const navGroups = ['계정', '매칭'];
+const navGroups = ['계정', '매칭', '정산', '관리'];
 
 const iconPaths = {
   home: 'M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1v-9.5Z',
@@ -23,6 +27,9 @@ const iconPaths = {
   sitter: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M4 21a8 8 0 0 1 16 0 M16.5 7.5l2-2 M18.5 5.5l1.5 1.5',
   activity: 'M5 12h4l2-5 4 10 2-5h2 M6 19h12',
   calendar: 'M7 3v4 M17 3v4 M4 8h16 M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z',
+  chat: 'M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z M8 9h8 M8 13h5',
+  payment: 'M4 7h16v10H4z M4 10h16 M7 14h4',
+  settlement: 'M12 3v18 M7 7h7a3 3 0 0 1 0 6h-4a3 3 0 0 0 0 6h7',
   paw: 'M8.5 10.5c1.1 0 2-1.2 2-2.7s-.9-2.8-2-2.8-2 1.2-2 2.8.9 2.7 2 2.7Z M15.5 10.5c1.1 0 2-1.2 2-2.7s-.9-2.8-2-2.8-2 1.2-2 2.8.9 2.7 2 2.7Z M5.5 14.5c.9 0 1.6-.9 1.6-2s-.7-2-1.6-2-1.6.9-1.6 2 .7 2 1.6 2Z M18.5 14.5c.9 0 1.6-.9 1.6-2s-.7-2-1.6-2-1.6.9-1.6 2 .7 2 1.6 2Z M8 17.5c0-2.2 1.8-4 4-4s4 1.8 4 4c0 1.8-1.1 3-4 3s-4-1.2-4-3Z',
   badge: 'M12 3l7 4v5c0 4.2-2.8 7.2-7 9-4.2-1.8-7-4.8-7-9V7l7-4Z M9 12l2 2 4-4',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M5 21a7 7 0 0 1 14 0',
@@ -129,6 +136,7 @@ function AppLayout() {
                 <div className="mt-2 grid gap-1">
                   {navItems
                     .filter((item) => item.group === group)
+                    .filter((item) => item.to !== '/admin' || member?.role === 'ADMIN')
                     .map((item) => (
                       <NavLink
                         key={item.to}
@@ -202,7 +210,10 @@ function AppLayout() {
               </div>
 
               <nav className="flex min-w-0 flex-1 gap-2 overflow-x-auto lg:hidden">
-                {navItems.slice(0, 6).map((item) => (
+                {navItems
+                  .filter((item) => item.to !== '/admin' || member?.role === 'ADMIN')
+                  .slice(0, 7)
+                  .map((item) => (
                   <NavLink
                     key={item.to}
                     to={item.to}

@@ -6,8 +6,8 @@ import {
   cancelReservation,
   completeReservation,
   confirmPayment,
-  confirmReservation,
   createPayment,
+  failPayment,
   getMyInfo,
   getReservation,
 } from '../api';
@@ -193,6 +193,7 @@ function ReservationDetailPage() {
     setErrorMessage('');
     setActionMessage('');
     setPayingRole(paymentRole);
+    let merchantUidForFailure = '';
 
     try {
       const paymentResult = await createPayment({
@@ -211,6 +212,18 @@ function ReservationDetailPage() {
       }
 
       const payment = paymentResult.data;
+      merchantUidForFailure = payment.merchantUid;
+      const markPaymentFailed = async (failedReason: string) => {
+        const failResult = await failPayment({
+          merchantUid: payment.merchantUid,
+          failedReason,
+        });
+
+        if (!failResult.success) {
+          setErrorMessage(failResult.error.message);
+        }
+      };
+
       setActionMessage(
         `${payment.finalAmount.toLocaleString()}원 결제창을 여는 중입니다.`,
       );
@@ -240,11 +253,13 @@ function ReservationDetailPage() {
       });
 
       if (!portOneResponse) {
+        await markPaymentFailed('결제창이 완료 응답 없이 종료되었습니다.');
         setErrorMessage('결제가 완료되지 않았습니다.');
         return;
       }
 
       if (portOneResponse.code) {
+        await markPaymentFailed(portOneResponse.message ?? portOneResponse.code);
         setErrorMessage(portOneResponse.message ?? '결제창에서 결제가 실패했습니다.');
         return;
       }
@@ -288,24 +303,15 @@ function ReservationDetailPage() {
         return;
       }
 
-      if (paymentConfirmResult.error.code !== 'NOT_FOUND') {
-        setErrorMessage(paymentConfirmResult.error.message);
-        return;
-      }
-
-      const legacyConfirmResult = await confirmReservation(reservation.id);
-
-      if (!legacyConfirmResult.success) {
-        setErrorMessage(legacyConfirmResult.error.message);
-        return;
-      }
-
-      setReservation(legacyConfirmResult.data);
-      setActionMessage(
-        '결제창은 완료되었지만 현재 연결된 백엔드에 /api/payments/confirm이 없어 기존 예약 확정 API로 처리했습니다.',
-      );
+      setErrorMessage(paymentConfirmResult.error.message);
     } catch (error) {
       console.error('[ReservationDetailPage] PortOne payment failed', error);
+      if (merchantUidForFailure) {
+        await failPayment({
+          merchantUid: merchantUidForFailure,
+          failedReason: getPaymentErrorMessage(error),
+        });
+      }
       setErrorMessage(getPaymentErrorMessage(error));
     } finally {
       setPayingRole(null);
