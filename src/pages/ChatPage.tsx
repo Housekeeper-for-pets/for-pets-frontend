@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import {
   createOrGetChatRoom,
+  getMyInfo,
   getChatMessages,
   getChatRooms,
   leaveChatRoom,
@@ -31,12 +32,37 @@ interface ChatRouteState {
   selectedRoom?: ChatRoomListItem;
 }
 
+const sortMessages = (items: ChatMessageItem[]) => {
+  const messageMap = new Map<number, ChatMessageItem>();
+
+  items.forEach((item) => {
+    messageMap.set(item.messageId, item);
+  });
+
+  return [...messageMap.values()].sort((a, b) => a.messageId - b.messageId);
+};
+
+const getRoomTime = (room: ChatRoomListItem) =>
+  room.lastMessageAt ? new Date(room.lastMessageAt).getTime() : 0;
+
+const sortRooms = (items: ChatRoomListItem[]) =>
+  [...items].sort((a, b) => {
+    const timeDiff = getRoomTime(b) - getRoomTime(a);
+
+    if (timeDiff !== 0) {
+      return timeDiff;
+    }
+
+    return b.chatRoomId - a.chatRoomId;
+  });
+
 function ChatPage() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [rooms, setRooms] = useState<ChatRoomListItem[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<ChatRoomListItem | null>(null);
   const [messages, setMessages] = useState<ChatMessageItem[]>([]);
+  const [currentMemberId, setCurrentMemberId] = useState<number | null>(null);
   const [opponentId, setOpponentId] = useState('');
   const [messageText, setMessageText] = useState('');
   const [socketStatus, setSocketStatus] = useState('연결 전');
@@ -44,6 +70,35 @@ function ChatPage() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const socketRef = useRef<WebSocket | null>(null);
+  const selectedRoomRef = useRef<ChatRoomListItem | null>(null);
+  const currentMemberIdRef = useRef<number | null>(null);
+
+  const roomIdsKey = rooms.map((room) => room.chatRoomId).sort((a, b) => a - b).join(',');
+
+  const upsertRoom = (nextRoom: ChatRoomListItem) => {
+    setRooms((prevRooms) => {
+      const existingRoom = prevRooms.find(
+        (room) => room.chatRoomId === nextRoom.chatRoomId,
+      );
+
+      if (!existingRoom) {
+        return sortRooms([nextRoom, ...prevRooms]);
+      }
+
+      return sortRooms([
+        { ...existingRoom, ...nextRoom },
+        ...prevRooms.filter((room) => room.chatRoomId !== nextRoom.chatRoomId),
+      ]);
+    });
+  };
+
+  useEffect(() => {
+    selectedRoomRef.current = selectedRoom;
+  }, [selectedRoom]);
+
+  useEffect(() => {
+    currentMemberIdRef.current = currentMemberId;
+  }, [currentMemberId]);
 
   const fetchRooms = async () => {
     setErrorMessage('');
@@ -61,12 +116,18 @@ function ChatPage() {
           (targetChatRoomId && routeStateRoom?.chatRoomId === targetChatRoomId
             ? routeStateRoom
             : null);
+        const nextRooms = sortRooms(
+          targetRoom &&
+          !result.data.items.some((room) => room.chatRoomId === targetRoom.chatRoomId)
+            ? [targetRoom, ...result.data.items]
+            : result.data.items,
+        );
 
-        setRooms(result.data.items);
+        setRooms(nextRooms);
         setSelectedRoom((prevRoom) =>
           targetRoom ??
-          (prevRoom
-            ? result.data.items.find((room) => room.chatRoomId === prevRoom.chatRoomId) ?? null
+          (prevRoom && nextRooms.some((room) => room.chatRoomId === prevRoom.chatRoomId)
+            ? prevRoom
             : null),
         );
 
@@ -86,7 +147,28 @@ function ChatPage() {
   };
 
   useEffect(() => {
+    const fetchCurrentMember = async () => {
+      try {
+        const result = await getMyInfo();
+
+        if (result.success) {
+          setCurrentMemberId(result.data.id);
+        }
+      } catch {
+        setCurrentMemberId(null);
+      }
+    };
+
+    void fetchCurrentMember();
     void fetchRooms();
+  }, []);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      void fetchRooms();
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
@@ -103,7 +185,7 @@ function ChatPage() {
         const result = await getChatMessages(selectedRoom.chatRoomId, { size: 50 });
 
         if (result.success) {
-          setMessages([...result.data.items].reverse());
+          setMessages(sortMessages(result.data.items));
           setRooms((prevRooms) =>
             prevRooms.map((room) =>
               room.chatRoomId === selectedRoom.chatRoomId
@@ -126,7 +208,7 @@ function ChatPage() {
   }, [selectedRoom]);
 
   useEffect(() => {
-    if (!selectedRoom) return;
+    if (currentMemberId === null || rooms.length === 0) return;
 
     const token = getAccessToken();
 
@@ -148,9 +230,11 @@ function ChatPage() {
 
       if (frame.startsWith('CONNECTED')) {
         setSocketStatus('연결됨');
-        socket.send(
-          `SUBSCRIBE\nid:room-${selectedRoom.chatRoomId}\ndestination:/sub/chat-rooms/${selectedRoom.chatRoomId}\n\n\0`,
-        );
+        rooms.forEach((room) => {
+          socket.send(
+            `SUBSCRIBE\nid:room-${room.chatRoomId}\ndestination:/sub/chat-rooms/${room.chatRoomId}\n\n\0`,
+          );
+        });
         return;
       }
 
@@ -159,19 +243,45 @@ function ChatPage() {
 
         try {
           const broadcast = JSON.parse(body) as ChatMessageBroadcast;
-          setMessages((prevMessages) => [
-            ...prevMessages,
-            {
-              messageId: broadcast.messageId,
-              messageType: broadcast.messageType,
-              senderId: broadcast.senderId,
-              senderNickname: broadcast.senderNickname,
-              content: broadcast.content,
-              createdAt: broadcast.createdAt,
-              isMine: false,
-              isReadByOpponent: false,
-            },
-          ]);
+          const activeRoom = selectedRoomRef.current;
+          const memberId = currentMemberIdRef.current;
+          const isMine = broadcast.senderId === memberId;
+          const isActiveRoom = activeRoom?.chatRoomId === broadcast.chatRoomId;
+          const existingRoom = rooms.find((room) => room.chatRoomId === broadcast.chatRoomId);
+
+          if (isActiveRoom) {
+            setMessages((prevMessages) => [
+              ...sortMessages([
+                ...prevMessages,
+                {
+                  messageId: broadcast.messageId,
+                  messageType: broadcast.messageType,
+                  senderId: broadcast.senderId,
+                  senderNickname: broadcast.senderNickname,
+                  content: broadcast.content,
+                  createdAt: broadcast.createdAt,
+                  isMine,
+                  isReadByOpponent: false,
+                },
+              ]),
+            ]);
+          }
+
+          if (!existingRoom) {
+            void fetchRooms();
+            return;
+          }
+
+          upsertRoom({
+            ...existingRoom,
+            lastMessage: broadcast.content,
+            lastMessageType: broadcast.messageType,
+            lastMessageAt: broadcast.createdAt,
+            unreadCount: isActiveRoom || isMine ? 0 : existingRoom.unreadCount,
+          });
+          if (!isActiveRoom && !isMine) {
+            void fetchRooms();
+          }
         } catch {
           setErrorMessage('수신 메시지를 해석하지 못했습니다.');
         }
@@ -195,7 +305,7 @@ function ChatPage() {
       socket.close();
       socketRef.current = null;
     };
-  }, [selectedRoom]);
+  }, [currentMemberId, roomIdsKey]);
 
   const handleCreateRoom = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -212,9 +322,7 @@ function ChatPage() {
       const result = await createOrGetChatRoom({ opponentId: parsedOpponentId });
 
       if (result.success) {
-        setOpponentId('');
-        await fetchRooms();
-        setSelectedRoom({
+        const nextRoom: ChatRoomListItem = {
           chatRoomId: result.data.chatRoomId,
           opponentId: result.data.opponentId,
           opponentNickname: result.data.opponentNickname,
@@ -222,7 +330,12 @@ function ChatPage() {
           lastMessageType: null,
           lastMessageAt: null,
           unreadCount: 0,
-        });
+        };
+
+        setOpponentId('');
+        await fetchRooms();
+        upsertRoom(nextRoom);
+        setSelectedRoom(nextRoom);
         return;
       }
 
