@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   acceptProposal,
   closePost,
+  createOrGetChatRoom,
   createProposal,
   deletePost,
   getMyInfo,
@@ -45,6 +46,7 @@ function PostDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingProposals, setIsLoadingProposals] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isOpeningChat, setIsOpeningChat] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [proposalErrorMessage, setProposalErrorMessage] = useState('');
   const [proposalSuccessMessage, setProposalSuccessMessage] = useState('');
@@ -159,6 +161,40 @@ function PostDetailPage() {
       setProposalErrorMessage('제안 등록 중 문제가 발생했습니다.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleOpenChat = async () => {
+    if (!post) return;
+
+    setProposalErrorMessage('');
+    setIsOpeningChat(true);
+
+    try {
+      const result = await createOrGetChatRoom({ opponentId: post.memberId });
+
+      if (result.success) {
+        navigate(`/chat?roomId=${result.data.chatRoomId}`, {
+          state: {
+            selectedRoom: {
+              chatRoomId: result.data.chatRoomId,
+              opponentId: result.data.opponentId,
+              opponentNickname: result.data.opponentNickname,
+              lastMessage: null,
+              lastMessageType: null,
+              lastMessageAt: null,
+              unreadCount: 0,
+            },
+          },
+        });
+        return;
+      }
+
+      setProposalErrorMessage(result.error.message);
+    } catch {
+      setProposalErrorMessage('채팅방을 여는 중 문제가 발생했습니다.');
+    } finally {
+      setIsOpeningChat(false);
     }
   };
 
@@ -403,6 +439,14 @@ function PostDetailPage() {
               className="w-full rounded-2xl bg-[#E26B4A] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#D95D3D] disabled:cursor-not-allowed disabled:bg-[#D8B6A9]"
             >
               {isSubmitting ? '제안 등록 중...' : '제안 보내기'}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleOpenChat()}
+              disabled={isOpeningChat}
+              className="w-full rounded-2xl border border-[#E7DCD1] px-5 py-3 text-sm font-bold text-[#6F675F] transition hover:border-[#E26B4A] hover:text-[#E26B4A] disabled:cursor-not-allowed disabled:text-[#B0A59A]"
+            >
+              {isOpeningChat ? '채팅방 여는 중...' : '채팅하기'}
             </button>
           </form>
           )}

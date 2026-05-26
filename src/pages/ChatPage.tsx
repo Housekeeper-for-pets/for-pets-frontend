@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import {
   createOrGetChatRoom,
   getChatMessages,
@@ -26,7 +27,13 @@ const parseStompBody = (frame: string) => {
   return body.replace(/\0$/, '');
 };
 
+interface ChatRouteState {
+  selectedRoom?: ChatRoomListItem;
+}
+
 function ChatPage() {
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [rooms, setRooms] = useState<ChatRoomListItem[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<ChatRoomListItem | null>(null);
   const [messages, setMessages] = useState<ChatMessageItem[]>([]);
@@ -40,17 +47,33 @@ function ChatPage() {
 
   const fetchRooms = async () => {
     setErrorMessage('');
+    const targetChatRoomId = Number(searchParams.get('roomId'));
+    const routeStateRoom = (location.state as ChatRouteState | null)?.selectedRoom;
 
     try {
       const result = await getChatRooms({ size: 30 });
 
       if (result.success) {
+        const targetRoom =
+          (targetChatRoomId
+            ? result.data.items.find((room) => room.chatRoomId === targetChatRoomId)
+            : null) ??
+          (targetChatRoomId && routeStateRoom?.chatRoomId === targetChatRoomId
+            ? routeStateRoom
+            : null);
+
         setRooms(result.data.items);
         setSelectedRoom((prevRoom) =>
-          prevRoom
+          targetRoom ??
+          (prevRoom
             ? result.data.items.find((room) => room.chatRoomId === prevRoom.chatRoomId) ?? null
-            : result.data.items[0] ?? null,
+            : null),
         );
+
+        if (targetRoom) {
+          setSearchParams({}, { replace: true });
+        }
+
         return;
       }
 
@@ -81,6 +104,13 @@ function ChatPage() {
 
         if (result.success) {
           setMessages([...result.data.items].reverse());
+          setRooms((prevRooms) =>
+            prevRooms.map((room) =>
+              room.chatRoomId === selectedRoom.chatRoomId
+                ? { ...room, unreadCount: 0 }
+                : room,
+            ),
+          );
           return;
         }
 

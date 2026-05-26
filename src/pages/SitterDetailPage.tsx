@@ -57,7 +57,19 @@ function SitterDetailPage() {
       const result = await createOrGetChatRoom({ opponentId: sitter.memberId });
 
       if (result.success) {
-        navigate('/chat');
+        navigate(`/chat?roomId=${result.data.chatRoomId}`, {
+          state: {
+            selectedRoom: {
+              chatRoomId: result.data.chatRoomId,
+              opponentId: result.data.opponentId,
+              opponentNickname: result.data.opponentNickname,
+              lastMessage: null,
+              lastMessageType: null,
+              lastMessageAt: null,
+              unreadCount: 0,
+            },
+          },
+        });
         return;
       }
 
