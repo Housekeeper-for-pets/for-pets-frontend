@@ -5,7 +5,7 @@ export type PaymentRole = 'GUARDIAN' | 'SITTER';
 
 export type PaymentProvider = 'PORTONE';
 
-export type PaymentType = 'RESERVATION_PAYMENT' | 'REFUND' | string;
+export type PaymentType = 'FULL' | 'DEPOSIT';
 
 export type PaymentStatus =
   | 'READY'
