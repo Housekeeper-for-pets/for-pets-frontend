@@ -15,6 +15,7 @@ import {
   getRegionLabel,
   possiblePetSizeLabels,
   possiblePetTypeLabels,
+  sitterApprovalStatusLabels,
   sitterStatusLabels,
 } from '../constants/options';
 import type {
@@ -106,6 +107,7 @@ function MySitterProfilePage() {
   const [isDeletingProfile, setIsDeletingProfile] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const isApproved = profile?.approvalStatus === 'APPROVED';
 
   // 페이지 진입 시 내 시터 프로필을 조회합니다.
   useEffect(() => {
@@ -368,7 +370,9 @@ function MySitterProfilePage() {
         </div>
         {profile && (
           <span className="w-fit rounded-full bg-[#EEF7EA] px-4 py-2 text-sm font-bold text-[#3F5732]">
-            {sitterStatusLabels[profile.status]}
+            {profile.approvalStatus
+              ? sitterApprovalStatusLabels[profile.approvalStatus]
+              : sitterStatusLabels[profile.status]}
           </span>
         )}
       </section>
@@ -406,6 +410,14 @@ function MySitterProfilePage() {
             </div>
             <dl className="mt-6 grid gap-3 md:grid-cols-2">
               <div className="rounded-2xl bg-[#FAF6F1] p-4">
+                <dt className="text-xs font-bold text-[#9B8E82]">승인 상태</dt>
+                <dd className="mt-1 text-sm font-bold text-[#2A2622]">
+                  {profile.approvalStatus
+                    ? sitterApprovalStatusLabels[profile.approvalStatus]
+                    : '확인 필요'}
+                </dd>
+              </div>
+              <div className="rounded-2xl bg-[#FAF6F1] p-4">
                 <dt className="text-xs font-bold text-[#9B8E82]">활동 지역</dt>
                 <dd className="mt-1 text-sm font-bold text-[#2A2622]">
                   {getRegionLabel(profile.region)}
@@ -426,10 +438,15 @@ function MySitterProfilePage() {
               <h2 className="mt-3 text-xl font-bold text-[#2A2622]">
                 예약 가능 상태
               </h2>
+              {!isApproved && (
+                <p className="mt-2 rounded-2xl bg-[#FFF0EA] px-4 py-3 text-sm leading-6 text-[#B44727]">
+                  관리자 승인 후 시터 역할과 예약 가능 상태가 활성화됩니다.
+                </p>
+              )}
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <button
                   type="button"
-                  disabled={profile.status === 'RESERVABLE'}
+                  disabled={!isApproved || profile.status === 'RESERVABLE'}
                   onClick={() => void handleStatusChange('RESERVABLE')}
                   className="rounded-2xl bg-[#E26B4A] px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#D8B6A9]"
                 >
@@ -437,7 +454,7 @@ function MySitterProfilePage() {
                 </button>
                 <button
                   type="button"
-                  disabled={profile.status === 'NON_RESERVABLE'}
+                  disabled={!isApproved || profile.status === 'NON_RESERVABLE'}
                   onClick={() => void handleStatusChange('NON_RESERVABLE')}
                   className="rounded-2xl bg-[#2A2622] px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#B0A59A]"
                 >
@@ -491,7 +508,8 @@ function MySitterProfilePage() {
               <button
                 type="button"
                 onClick={() => setSearchParams({ mode: 'edit' })}
-                className="rounded-2xl bg-[#E26B4A] px-4 py-2 text-sm font-bold text-white"
+                disabled={!isApproved}
+                className="rounded-2xl bg-[#E26B4A] px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#D8B6A9]"
               >
                 프로필 수정
               </button>
@@ -508,6 +526,12 @@ function MySitterProfilePage() {
           <dl className="mt-6 grid gap-3 md:grid-cols-2">
             {[
               ['활동 지역', getRegionLabel(profile.region)],
+              [
+                '승인 상태',
+                profile.approvalStatus
+                  ? sitterApprovalStatusLabels[profile.approvalStatus]
+                  : '확인 필요',
+              ],
               ['경력', `${profile.experienceYears}년`],
               ['가능 동물', possiblePetTypeLabels[profile.possiblePetType]],
               ['가능 크기', possiblePetSizeLabels[profile.possiblePetSize]],
@@ -677,12 +701,21 @@ function MySitterProfilePage() {
               예약 가능 상태
             </h2>
             <p className="mt-2 text-sm leading-6 text-[#6F675F]">
-              예약 가능 상태를 변경하면 시터 검색과 요청 가능 여부에 반영됩니다.
+              관리자 승인 후 예약 가능 상태를 변경할 수 있으며, 변경 사항은 시터 검색과 요청 가능 여부에 반영됩니다.
             </p>
+            {!isApproved && (
+              <p className="mt-3 rounded-2xl bg-[#FFF0EA] px-4 py-3 text-sm leading-6 text-[#B44727]">
+                현재 승인 상태는{' '}
+                {profile?.approvalStatus
+                  ? sitterApprovalStatusLabels[profile.approvalStatus]
+                  : '확인 필요'}
+                입니다.
+              </p>
+            )}
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
-                disabled={!profile || profile.status === 'RESERVABLE'}
+                disabled={!profile || !isApproved || profile.status === 'RESERVABLE'}
                 onClick={() => void handleStatusChange('RESERVABLE')}
                 className="rounded-2xl bg-[#E26B4A] px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#D8B6A9]"
               >
@@ -690,7 +723,7 @@ function MySitterProfilePage() {
               </button>
               <button
                 type="button"
-                disabled={!profile || profile.status === 'NON_RESERVABLE'}
+                disabled={!profile || !isApproved || profile.status === 'NON_RESERVABLE'}
                 onClick={() => void handleStatusChange('NON_RESERVABLE')}
                 className="rounded-2xl bg-[#2A2622] px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#B0A59A]"
               >

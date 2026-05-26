@@ -6,6 +6,7 @@ import {
   getRegionLabel,
   possiblePetSizeLabels,
   possiblePetTypeLabels,
+  sitterApprovalStatusLabels,
   sitterStatusLabels,
 } from '../constants/options';
 import type { SitterProfile } from '../types';
@@ -117,12 +118,27 @@ function SitterDetailPage() {
                 {sitter.introduction || '아직 자기소개가 등록되지 않았습니다.'}
               </p>
             </div>
-            <span className="w-fit rounded-full bg-[#EEF7EA] px-3 py-1 text-xs font-bold text-[#3F5732]">
-              {sitterStatusLabels[sitter.status]}
-            </span>
+            <div className="flex flex-wrap gap-2 md:justify-end">
+              {sitter.approvalStatus && (
+                <span className="w-fit rounded-full bg-[#FFF0EA] px-3 py-1 text-xs font-bold text-[#B44727]">
+                  {sitterApprovalStatusLabels[sitter.approvalStatus]}
+                </span>
+              )}
+              <span className="w-fit rounded-full bg-[#EEF7EA] px-3 py-1 text-xs font-bold text-[#3F5732]">
+                {sitterStatusLabels[sitter.status]}
+              </span>
+            </div>
           </div>
 
-          <dl className="mt-7 grid gap-3 sm:grid-cols-3">
+          <dl className="mt-7 grid gap-3 sm:grid-cols-4">
+            <div className="rounded-2xl bg-[#FAF6F1] p-4">
+              <dt className="text-xs font-bold text-[#9B8E82]">승인 상태</dt>
+              <dd className="mt-2 text-lg font-bold text-[#2A2622]">
+                {sitter.approvalStatus
+                  ? sitterApprovalStatusLabels[sitter.approvalStatus]
+                  : '확인 필요'}
+              </dd>
+            </div>
             <div className="rounded-2xl bg-[#FAF6F1] p-4">
               <dt className="text-xs font-bold text-[#9B8E82]">가능 동물</dt>
               <dd className="mt-2 text-lg font-bold text-[#2A2622]">

@@ -7,6 +7,7 @@ import {
   getRegionLabel,
   possiblePetSizeLabels,
   possiblePetTypeLabels,
+  sitterApprovalStatusLabels,
   sitterStatusLabels,
 } from '../constants/options';
 import type {
@@ -244,7 +245,8 @@ function SittersPage() {
 
         {!isLoading && sitters.length === 0 && (
           <p className="rounded-2xl bg-white p-5 text-sm leading-6 text-[#6F675F] shadow-sm md:col-span-2">
-            조건에 맞는 시터가 없습니다. 검색 조건을 조금 넓혀보세요.
+            조건에 맞는 승인 완료 시터가 없습니다. 승인 대기 중인 시터는 관리자 승인 후
+            목록에 노출됩니다.
           </p>
         )}
 
@@ -262,9 +264,16 @@ function SittersPage() {
                   {sitter.experienceYears}년 경력 시터
                 </h2>
               </div>
-              <span className="rounded-full bg-[#EEF7EA] px-3 py-1 text-xs font-bold text-[#3F5732]">
-                {sitterStatusLabels[sitter.status]}
-              </span>
+              <div className="flex flex-wrap justify-end gap-2">
+                {sitter.approvalStatus && (
+                  <span className="rounded-full bg-[#FFF0EA] px-3 py-1 text-xs font-bold text-[#B44727]">
+                    {sitterApprovalStatusLabels[sitter.approvalStatus]}
+                  </span>
+                )}
+                <span className="rounded-full bg-[#EEF7EA] px-3 py-1 text-xs font-bold text-[#3F5732]">
+                  {sitterStatusLabels[sitter.status]}
+                </span>
+              </div>
             </div>
 
             <p className="mt-4 line-clamp-2 text-sm leading-6 text-[#6F675F]">
