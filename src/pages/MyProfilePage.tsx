@@ -13,6 +13,7 @@ import {
 import RegionSelect from '../components/RegionSelect';
 import { getRegionLabel } from '../constants/options';
 import type {
+  ApiErrorDetail,
   ChangePasswordRequest,
   Member,
   MemberGender,
@@ -56,6 +57,14 @@ const getMode = (value: string | null): AccountMode => {
   if (value === 'detail' || value === 'edit') return value;
 
   return 'summary';
+};
+
+const getCouponIssueErrorMessage = (error: ApiErrorDetail) => {
+  if (error.code === 'COUPON_ISSUE_LOCK_FAILED') {
+    return '쿠폰 발급 요청이 몰려 잠시 처리되지 않았습니다. 잠시 후 다시 시도해 주세요.';
+  }
+
+  return error.message;
 };
 
 // 내 계정의 허브, 상세, 수정 흐름을 관리하는 페이지입니다.
@@ -222,7 +231,7 @@ function MyProfilePage() {
         return;
       }
 
-      setErrorMessage(result.error.message);
+      setErrorMessage(getCouponIssueErrorMessage(result.error));
     } catch {
       setErrorMessage('쿠폰 발급 중 문제가 발생했습니다.');
     } finally {
