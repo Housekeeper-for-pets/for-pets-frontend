@@ -23,6 +23,12 @@ const selectClassName =
 const inputClassName =
   'w-full rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm text-[#2A2622] outline-none transition placeholder:text-[#B0A59A] focus:border-[#E26B4A] focus:ring-4 focus:ring-[#F7D8CC]';
 
+const postSortOptions = [
+  { value: 'createdAt', label: '최근 등록순' },
+  { value: 'updatedAt', label: '최근 수정순' },
+  { value: 'budgetAmount', label: '예산 높은순' },
+] as const;
+
 // 빈 검색 조건은 쿼리 파라미터에서 제외합니다.
 const buildQuery = (query: PostSearchQuery): PostSearchQuery => {
   const nextQuery: PostSearchQuery = {
@@ -67,7 +73,6 @@ function PostsPage() {
           ? await getMyPosts({
               page: 0,
               size: nextQuery.size,
-              sort: nextQuery.sort,
               status: nextQuery.status,
             })
           : await searchPosts(buildQuery(nextQuery));
@@ -142,7 +147,7 @@ function PostsPage() {
       </section>
 
       <form
-        className="mt-6 grid gap-3 rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm lg:grid-cols-[1fr_2fr_1fr_1fr_auto]"
+        className="mt-6 grid gap-3 rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm lg:grid-cols-[1fr_2fr_1fr_1fr_1fr_auto]"
         onSubmit={handleSubmit}
       >
         <input
@@ -201,6 +206,25 @@ function PostsPage() {
           <option value="">전체 상태</option>
           <option value="OPEN">{postStatusLabels.OPEN}</option>
           <option value="CLOSED">{postStatusLabels.CLOSED}</option>
+        </select>
+
+        <select
+          aria-label="공고 정렬"
+          className={selectClassName}
+          disabled={viewMode === 'mine'}
+          value={query.sort ?? 'createdAt'}
+          onChange={(event) =>
+            setQuery((prevQuery) => ({
+              ...prevQuery,
+              sort: event.target.value,
+            }))
+          }
+        >
+          {postSortOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
         </select>
 
         <button

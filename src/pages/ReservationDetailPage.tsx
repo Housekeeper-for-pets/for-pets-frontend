@@ -296,7 +296,7 @@ function ReservationDetailPage() {
         setActionMessage(
           `${paymentRoleLabels[paymentRole]} 결제가 검증되었습니다. ${
             paymentConfirmResult.data.reservationStatus === 'CONFIRMED'
-              ? '예약이 확정되었습니다.'
+              ? '예약이 확정되었습니다. 같은 시터의 겹치는 대기 예약은 자동 취소될 수 있습니다.'
               : '상대방 결제가 끝나면 예약이 확정됩니다.'
           }`,
         );

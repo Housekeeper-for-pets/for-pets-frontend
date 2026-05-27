@@ -8,6 +8,8 @@ import type {
   PostSearchQuery,
 } from '../types';
 
+type MyPostQuery = Pick<PostSearchQuery, 'page' | 'size' | 'status'>;
+
 // 보호자가 케어 공고를 생성합니다.
 export const createPost = async (request: PostRequest) => {
   const response = await axiosInstance.post<ApiResponse<Post>>('/posts', request);
@@ -26,7 +28,7 @@ export const searchPosts = async (query?: PostSearchQuery) => {
 };
 
 // 로그인한 보호자가 작성한 공고 목록을 조회합니다.
-export const getMyPosts = async (query?: PostSearchQuery) => {
+export const getMyPosts = async (query?: MyPostQuery) => {
   const response = await axiosInstance.get<ApiResponse<PageResponse<Post>>>(
     '/posts/me',
     { params: query },
