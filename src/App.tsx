@@ -10,6 +10,7 @@ import MyActivityPage from './pages/MyActivityPage';
 import MyProfilePage from './pages/MyProfilePage';
 import MySitterProfilePage from './pages/MySitterProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
+import NotificationsPage from './pages/NotificationsPage';
 import PetsPage from './pages/PetsPage';
 import PaymentsPage from './pages/PaymentsPage';
 import PostCreatePage from './pages/PostCreatePage';
@@ -32,6 +33,7 @@ function App() {
         <Route path="/sitters/:sitterId" element={<SitterDetailPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/me" element={<MyProfilePage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/activity" element={<MyActivityPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/chat" element={<ChatPage />} />

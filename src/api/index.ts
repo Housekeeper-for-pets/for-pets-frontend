@@ -4,6 +4,7 @@ export * from './careRequestApi';
 export * from './chatApi';
 export * from './couponApi';
 export * from './memberApi';
+export * from './notificationApi';
 export * from './paymentApi';
 export * from './petApi';
 export * from './postApi';

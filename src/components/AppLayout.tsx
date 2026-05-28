@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { getMyInfo, getMyPets } from '../api';
+import { getMyInfo, getMyPets, getUnreadNotificationCount } from '../api';
 import { useAuth } from '../hooks/useAuth';
 import type { Member, Pet } from '../types';
 import BrandLogo from './BrandLogo';
@@ -9,6 +9,7 @@ import BrandLogo from './BrandLogo';
 const navItems = [
   { to: '/', label: '홈', icon: 'home', group: '매칭' },
   { to: '/me', label: '내 계정', icon: 'user', group: '계정' },
+  { to: '/notifications', label: '알림', icon: 'bell', group: '계정' },
   { to: '/activity', label: '요청/제안', icon: 'activity', group: '매칭' },
   { to: '/reservations', label: '예약 관리', icon: 'calendar', group: '매칭' },
   { to: '/chat', label: '채팅', icon: 'chat', group: '매칭' },
@@ -29,9 +30,19 @@ const iconPaths = {
   paw: 'M8.5 10.5c1.1 0 2-1.2 2-2.7s-.9-2.8-2-2.8-2 1.2-2 2.8.9 2.7 2 2.7Z M15.5 10.5c1.1 0 2-1.2 2-2.7s-.9-2.8-2-2.8-2 1.2-2 2.8.9 2.7 2 2.7Z M5.5 14.5c.9 0 1.6-.9 1.6-2s-.7-2-1.6-2-1.6.9-1.6 2 .7 2 1.6 2Z M18.5 14.5c.9 0 1.6-.9 1.6-2s-.7-2-1.6-2-1.6.9-1.6 2 .7 2 1.6 2Z M8 17.5c0-2.2 1.8-4 4-4s4 1.8 4 4c0 1.8-1.1 3-4 3s-4-1.2-4-3Z',
   badge: 'M12 3l7 4v5c0 4.2-2.8 7.2-7 9-4.2-1.8-7-4.8-7-9V7l7-4Z M9 12l2 2 4-4',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M5 21a7 7 0 0 1 14 0',
+  bell: 'M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z M10 21h4',
 } as const;
 
 type NavIconName = keyof typeof iconPaths;
+
+const notificationEventTypes = [
+  'CARE_LOG',
+  'PROPOSAL_ARRIVED',
+  'MATCHING_CONFIRMED',
+  'REQUEST_RECEIVED',
+  'PROPOSAL_WITHDRAWN',
+  'PAYMENT_COMPLETED',
+];
 
 function NavIcon({ name }: { name: NavIconName }) {
   return (
@@ -57,9 +68,13 @@ function AppLayout() {
   const [keyword, setKeyword] = useState('');
   const [member, setMember] = useState<Member | null>(null);
   const [pets, setPets] = useState<Pet[]>([]);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
   useEffect(() => {
     if (!isAuthenticated) {
+      setMember(null);
+      setPets([]);
+      setUnreadNotificationCount(0);
       return;
     }
 
@@ -80,6 +95,50 @@ function AppLayout() {
 
     void fetchSidebarProfile();
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!member || !isAuthenticated) return;
+
+    const fetchUnreadCount = async () => {
+      const result = await getUnreadNotificationCount(member.id);
+
+      if (result.success) {
+        setUnreadNotificationCount(result.data.count);
+      }
+    };
+
+    void fetchUnreadCount();
+
+    const eventSource = new EventSource(
+      `/api/notifications/stream?userId=${member.id}`,
+    );
+    const handleServerNotification = () => {
+      void fetchUnreadCount();
+      window.dispatchEvent(new CustomEvent('forpets:notification'));
+    };
+    const handleNotificationRefresh = () => {
+      void fetchUnreadCount();
+    };
+
+    notificationEventTypes.forEach((eventType) => {
+      eventSource.addEventListener(eventType, handleServerNotification);
+    });
+    window.addEventListener('forpets:notification-refresh', handleNotificationRefresh);
+    eventSource.onerror = () => {
+      eventSource.close();
+    };
+
+    return () => {
+      notificationEventTypes.forEach((eventType) => {
+        eventSource.removeEventListener(eventType, handleServerNotification);
+      });
+      window.removeEventListener(
+        'forpets:notification-refresh',
+        handleNotificationRefresh,
+      );
+      eventSource.close();
+    };
+  }, [isAuthenticated, member?.id]);
 
   const handleLogout = async () => {
     await signOut();
@@ -150,7 +209,14 @@ function AppLayout() {
                         <span className="grid h-6 w-6 place-items-center rounded-lg bg-white/70 text-xs text-[#D96F4F]">
                           <NavIcon name={item.icon as NavIconName} />
                         </span>
-                        {item.label}
+                        <span className="min-w-0 flex-1">{item.label}</span>
+                        {item.to === '/notifications' && unreadNotificationCount > 0 && (
+                          <span className="rounded-full bg-[#D96F4F] px-2 py-0.5 text-[10px] font-black text-white">
+                            {unreadNotificationCount > 99
+                              ? '99+'
+                              : unreadNotificationCount}
+                          </span>
+                        )}
                       </NavLink>
                     ))}
                 </div>
@@ -223,7 +289,9 @@ function AppLayout() {
                       ].join(' ')
                     }
                   >
-                    {item.label}
+                    {item.to === '/notifications' && unreadNotificationCount > 0
+                      ? `${item.label} ${unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}`
+                      : item.label}
                   </NavLink>
                 ))}
               </nav>
