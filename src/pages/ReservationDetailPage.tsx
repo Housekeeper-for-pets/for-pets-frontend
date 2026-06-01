@@ -6,10 +6,13 @@ import {
   cancelReservation,
   completeReservation,
   confirmPayment,
+  createCareLog,
   createPayment,
+  createReview,
   failPayment,
   getMyInfo,
   getReservation,
+  getReservationCareLogs,
 } from '../api';
 import { hasPortOneConfig, portOneConfig } from '../api/portOneConfig';
 import {
@@ -20,6 +23,9 @@ import {
 import type {
   CancelCategory,
   CancelReservationRequest,
+  CareLog,
+  CreateCareLogRequest,
+  CreateReviewRequest,
   ApiResponse,
   Member,
   PaymentRole,
@@ -31,8 +37,34 @@ const initialCancelForm: CancelReservationRequest = {
   cancelCategory: 'PERSONAL',
 };
 
+const initialCareLogForm: CreateCareLogRequest = {
+  content: '',
+  imageUrls: [],
+};
+
+const initialReviewForm: CreateReviewRequest = {
+  reservationId: 0,
+  rating: 5,
+  reviewComment: '',
+};
+
 const inputClassName =
   'w-full rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm text-[#2A2622] outline-none transition placeholder:text-[#B0A59A] focus:border-[#E26B4A] focus:ring-4 focus:ring-[#F7D8CC]';
+
+const formatDateTime = (value?: string) => {
+  if (!value) return '-';
+
+  return new Intl.DateTimeFormat('ko-KR', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
+};
+
+const parseImageUrls = (value: string) =>
+  value
+    .split('\n')
+    .map((url) => url.trim())
+    .filter(Boolean);
 
 const getPaymentLabel = (reservation: Reservation) => {
   if (reservation.guardianPaid && reservation.sitterPaid) {
@@ -110,10 +142,18 @@ function ReservationDetailPage() {
   const { reservationId } = useParams<{ reservationId: string }>();
   const [reservation, setReservation] = useState<Reservation | null>(null);
   const [currentMember, setCurrentMember] = useState<Member | null>(null);
+  const [careLogs, setCareLogs] = useState<CareLog[]>([]);
   const [cancelForm, setCancelForm] =
     useState<CancelReservationRequest>(initialCancelForm);
+  const [careLogForm, setCareLogForm] =
+    useState<CreateCareLogRequest>(initialCareLogForm);
+  const [careLogImageInput, setCareLogImageInput] = useState('');
+  const [reviewForm, setReviewForm] =
+    useState<CreateReviewRequest>(initialReviewForm);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isCreatingCareLog, setIsCreatingCareLog] = useState(false);
+  const [isCreatingReview, setIsCreatingReview] = useState(false);
   const [payingRole, setPayingRole] = useState<PaymentRole | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [actionMessage, setActionMessage] = useState('');
@@ -138,6 +178,15 @@ function ReservationDetailPage() {
 
         if (reservationResult.success) {
           setReservation(reservationResult.data);
+          setReviewForm((prevForm) => ({
+            ...prevForm,
+            reservationId: reservationResult.data.id,
+          }));
+
+          const careLogResult = await getReservationCareLogs(reservationResult.data.id);
+          if (careLogResult.success) {
+            setCareLogs(careLogResult.data);
+          }
           return;
         }
 
@@ -326,6 +375,77 @@ function ReservationDetailPage() {
     );
   };
 
+  const handleCreateCareLog = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!reservation) return;
+
+    if (!careLogForm.content.trim()) {
+      setErrorMessage('케어 일지 내용을 입력해 주세요.');
+      return;
+    }
+
+    setErrorMessage('');
+    setActionMessage('');
+    setIsCreatingCareLog(true);
+
+    try {
+      const result = await createCareLog(reservation.id, {
+        content: careLogForm.content.trim(),
+        imageUrls: parseImageUrls(careLogImageInput),
+      });
+
+      if (result.success) {
+        setCareLogs((prevLogs) => [result.data, ...prevLogs]);
+        setCareLogForm(initialCareLogForm);
+        setCareLogImageInput('');
+        setActionMessage('케어 일지가 등록되었습니다.');
+        return;
+      }
+
+      setErrorMessage(result.error.message);
+    } catch {
+      setErrorMessage('케어 일지 등록 중 문제가 발생했습니다.');
+    } finally {
+      setIsCreatingCareLog(false);
+    }
+  };
+
+  const handleCreateReview = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!reservation) return;
+
+    if (reviewForm.reviewComment.trim().length < 10) {
+      setErrorMessage('리뷰는 10자 이상 입력해 주세요.');
+      return;
+    }
+
+    setErrorMessage('');
+    setActionMessage('');
+    setIsCreatingReview(true);
+
+    try {
+      const result = await createReview({
+        ...reviewForm,
+        reservationId: reservation.id,
+        reviewComment: reviewForm.reviewComment.trim(),
+      });
+
+      if (result.success) {
+        setReviewForm({ ...initialReviewForm, reservationId: reservation.id });
+        setActionMessage('리뷰가 등록되었습니다. 시터 상세에서 확인할 수 있습니다.');
+        return;
+      }
+
+      setErrorMessage(result.error.message);
+    } catch {
+      setErrorMessage('리뷰 등록 중 문제가 발생했습니다.');
+    } finally {
+      setIsCreatingReview(false);
+    }
+  };
+
   const handleCancel = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -367,6 +487,12 @@ function ReservationDetailPage() {
   }
 
   const payableRoles = getPayableRoles(reservation, currentMember);
+  const canWriteCareLog =
+    reservation.status === 'CONFIRMED' &&
+    currentMember?.id === reservation.sitterMemberId;
+  const canWriteReview =
+    reservation.status === 'COMPLETED' &&
+    currentMember?.id === reservation.guardianId;
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-8">
@@ -593,6 +719,143 @@ function ReservationDetailPage() {
             ))}
           </div>
         </div>
+      </section>
+
+      <section className="mt-6 grid gap-6 lg:grid-cols-[1fr_360px]">
+        <article className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+            <div>
+              <p className="text-sm font-bold text-[#E26B4A]">CARE LOGS</p>
+              <h2 className="mt-3 text-2xl font-bold text-[#2A2622]">케어 일지</h2>
+              <p className="mt-2 text-sm leading-6 text-[#6F675F]">
+                시터가 등록한 돌봄 기록과 사진 링크를 한 곳에서 확인합니다.
+              </p>
+            </div>
+            <p className="text-sm font-semibold text-[#6F675F]">
+              {careLogs.length}개
+            </p>
+          </div>
+
+          <div className="mt-5 grid gap-4">
+            {careLogs.length === 0 && (
+              <p className="rounded-2xl bg-[#FAF6F1] p-5 text-sm text-[#6F675F]">
+                아직 등록된 케어 일지가 없습니다.
+              </p>
+            )}
+
+            {careLogs.map((careLog) => (
+              <article key={careLog.id} className="rounded-2xl bg-[#FAF6F1] p-5">
+                <div className="flex flex-col justify-between gap-2 md:flex-row">
+                  <p className="text-sm font-bold text-[#2A2622]">
+                    시터 #{careLog.sitterMemberId}
+                  </p>
+                  <p className="text-xs font-semibold text-[#8A8178]">
+                    {formatDateTime(careLog.createdAt)}
+                  </p>
+                </div>
+                <p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#6F675F]">
+                  {careLog.content}
+                </p>
+                {careLog.imageUrls.length > 0 && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {careLog.imageUrls.map((imageUrl) => (
+                      <a
+                        key={imageUrl}
+                        href={imageUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-full bg-white px-3 py-1 text-xs font-bold text-[#6F675F]"
+                      >
+                        이미지 보기
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </article>
+
+        <aside className="space-y-6">
+          <form
+            className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm"
+            onSubmit={handleCreateCareLog}
+          >
+            <p className="text-sm font-bold text-[#E26B4A]">SITTER LOG</p>
+            <h2 className="mt-3 text-xl font-bold text-[#2A2622]">
+              일지 작성
+            </h2>
+            <textarea
+              className="mt-5 min-h-32 w-full resize-y rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm leading-6 text-[#2A2622] outline-none transition placeholder:text-[#B0A59A] focus:border-[#E26B4A] focus:ring-4 focus:ring-[#F7D8CC]"
+              placeholder="오늘 돌봄 내용, 식사, 산책, 특이사항을 기록하세요."
+              value={careLogForm.content}
+              onChange={(event) =>
+                setCareLogForm((prevForm) => ({
+                  ...prevForm,
+                  content: event.target.value,
+                }))
+              }
+            />
+            <textarea
+              className="mt-3 min-h-20 w-full resize-y rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm leading-6 text-[#2A2622] outline-none transition placeholder:text-[#B0A59A] focus:border-[#E26B4A] focus:ring-4 focus:ring-[#F7D8CC]"
+              placeholder="이미지 URL을 줄바꿈으로 입력"
+              value={careLogImageInput}
+              onChange={(event) => setCareLogImageInput(event.target.value)}
+            />
+            <button
+              type="submit"
+              disabled={!canWriteCareLog || isCreatingCareLog}
+              className="mt-3 w-full rounded-2xl bg-[#E26B4A] px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#D8B6A9]"
+            >
+              {canWriteCareLog ? '케어 일지 등록' : '시터만 확정 예약에 작성 가능'}
+            </button>
+          </form>
+
+          <form
+            className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm"
+            onSubmit={handleCreateReview}
+          >
+            <p className="text-sm font-bold text-[#E26B4A]">REVIEW</p>
+            <h2 className="mt-3 text-xl font-bold text-[#2A2622]">리뷰 작성</h2>
+            <label className="mt-5 block">
+              <span className="text-sm font-bold text-[#2A2622]">평점</span>
+              <select
+                className={`mt-2 ${inputClassName}`}
+                value={reviewForm.rating}
+                onChange={(event) =>
+                  setReviewForm((prevForm) => ({
+                    ...prevForm,
+                    rating: Number(event.target.value),
+                  }))
+                }
+              >
+                {[5, 4, 3, 2, 1].map((rating) => (
+                  <option key={rating} value={rating}>
+                    {rating}점
+                  </option>
+                ))}
+              </select>
+            </label>
+            <textarea
+              className="mt-3 min-h-28 w-full resize-y rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm leading-6 text-[#2A2622] outline-none transition placeholder:text-[#B0A59A] focus:border-[#E26B4A] focus:ring-4 focus:ring-[#F7D8CC]"
+              placeholder="리뷰를 10자 이상 작성하세요."
+              value={reviewForm.reviewComment}
+              onChange={(event) =>
+                setReviewForm((prevForm) => ({
+                  ...prevForm,
+                  reviewComment: event.target.value,
+                }))
+              }
+            />
+            <button
+              type="submit"
+              disabled={!canWriteReview || isCreatingReview}
+              className="mt-3 w-full rounded-2xl bg-[#2A2622] px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#B0A59A]"
+            >
+              {canWriteReview ? '리뷰 등록' : '보호자만 완료 예약에 작성 가능'}
+            </button>
+          </form>
+        </aside>
       </section>
     </main>
   );

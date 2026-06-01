@@ -3,7 +3,12 @@ import type { FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getMyReservations } from '../api';
 import { careTypeLabels, reservationStatusLabels } from '../constants/options';
-import type { Reservation, ReservationSearchQuery, ReservationStatus } from '../types';
+import type {
+  Reservation,
+  ReservationRole,
+  ReservationSearchQuery,
+  ReservationStatus,
+} from '../types';
 
 const initialQuery: ReservationSearchQuery = {
   page: 0,
@@ -28,6 +33,7 @@ const buildQuery = (query: ReservationViewQuery): ReservationViewQuery => {
   };
 
   if (query.status) nextQuery.status = query.status;
+  if (query.roleAs) nextQuery.roleAs = query.roleAs;
 
   return nextQuery;
 };
@@ -77,7 +83,6 @@ function ReservationsPage() {
     ...initialQuery,
     status: initialStatus,
   });
-  const [allReservations, setAllReservations] = useState<Reservation[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -88,7 +93,7 @@ function ReservationsPage() {
     setErrorMessage('');
 
     try {
-      const result = await getMyReservations();
+      const result = await getMyReservations({ roleAs: nextQuery.roleAs });
 
       if (result.success) {
         const nextReservations = sortReservations(
@@ -96,7 +101,6 @@ function ReservationsPage() {
           nextQuery.sort,
         );
 
-        setAllReservations(result.data);
         setReservations(nextReservations);
         setTotalElements(nextReservations.length);
         return;
@@ -121,16 +125,8 @@ function ReservationsPage() {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const nextQuery = buildQuery(query);
-    const nextReservations = sortReservations(
-      nextQuery.status
-        ? filterReservations(allReservations, nextQuery.status)
-        : allReservations,
-      nextQuery.sort,
-    );
-
     setQuery(nextQuery);
-    setReservations(nextReservations);
-    setTotalElements(nextReservations.length);
+    void fetchReservations(nextQuery);
   };
 
   return (
@@ -149,9 +145,27 @@ function ReservationsPage() {
       </section>
 
       <form
-        className="mt-6 grid gap-3 rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm md:grid-cols-[1fr_1fr_auto]"
+        className="mt-6 grid gap-3 rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm md:grid-cols-[1fr_1fr_1fr_auto]"
         onSubmit={handleSubmit}
       >
+        <select
+          aria-label="예약 역할"
+          className={selectClassName}
+          value={query.roleAs ?? ''}
+          onChange={(event) =>
+            setQuery((prevQuery) => ({
+              ...prevQuery,
+              roleAs: event.target.value
+                ? (event.target.value as ReservationRole)
+                : undefined,
+            }))
+          }
+        >
+          <option value="">전체 역할</option>
+          <option value="GUARDIAN">보호자로 예약</option>
+          <option value="SITTER">시터로 예약</option>
+        </select>
+
         <select
           aria-label="예약 상태"
           className={selectClassName}

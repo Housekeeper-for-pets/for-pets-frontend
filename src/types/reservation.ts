@@ -17,12 +17,15 @@ export type ReservationStatus =
 
 export type ReservationSource = 'CARE_REQUEST' | 'PROPOSAL';
 
+export type ReservationRole = 'GUARDIAN' | 'SITTER';
+
 export type CancelCategory = 'PERSONAL' | 'SCHEDULE_CHANGE' | 'UNAVOIDABLE' | 'OTHER';
 
 export type CanceledBy = 'GUARDIAN' | 'SITTER';
 
 export interface ReservationSearchQuery extends PageQuery {
   status?: ReservationStatus;
+  roleAs?: ReservationRole;
 }
 
 export interface Reservation {

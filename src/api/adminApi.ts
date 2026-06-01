@@ -44,16 +44,16 @@ export const getAdminReservationCancelRequests = async () => {
 };
 
 export const approveAdminReservationCancel = async (reservationId: Id) => {
-  const response = await axiosInstance.patch<ApiResponse<Reservation>>(
-    `/admin/reservations/${reservationId}/cancel-approve`,
+  const response = await axiosInstance.post<ApiResponse<Reservation>>(
+    `/admin/reservations/${reservationId}/approve`,
   );
 
   return response.data;
 };
 
 export const rejectAdminReservationCancel = async (reservationId: Id) => {
-  const response = await axiosInstance.patch<ApiResponse<Reservation>>(
-    `/admin/reservations/${reservationId}/cancel-reject`,
+  const response = await axiosInstance.post<ApiResponse<Reservation>>(
+    `/admin/reservations/${reservationId}/reject`,
   );
 
   return response.data;
