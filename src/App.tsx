@@ -2,12 +2,14 @@ import { Route, Routes } from 'react-router-dom';
 import AppLayout from './components/AppLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminPage from './pages/AdminPage';
+import AiSitterChatPage from './pages/AiSitterChatPage';
 import CareRequestCreatePage from './pages/CareRequestCreatePage';
 import ChatPage from './pages/ChatPage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import MyActivityPage from './pages/MyActivityPage';
 import MyProfilePage from './pages/MyProfilePage';
+import MyReviewsPage from './pages/MyReviewsPage';
 import MySitterProfilePage from './pages/MySitterProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
 import NotificationsPage from './pages/NotificationsPage';
@@ -33,10 +35,12 @@ function App() {
         <Route path="/sitters/:sitterId" element={<SitterDetailPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/me" element={<MyProfilePage />} />
+          <Route path="/ai-chat" element={<AiSitterChatPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/activity" element={<MyActivityPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/chat" element={<ChatPage />} />
+          <Route path="/my-reviews" element={<MyReviewsPage />} />
           <Route path="/my-sitter" element={<MySitterProfilePage />} />
           <Route path="/payments" element={<PaymentsPage />} />
           <Route path="/pets" element={<PetsPage />} />

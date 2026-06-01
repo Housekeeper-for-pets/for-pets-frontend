@@ -38,6 +38,12 @@ const onboardingCards = [
     to: '/posts/new',
     cta: '작성하기',
   },
+  {
+    title: 'AI 시터 추천',
+    description: '반려동물 성향과 원하는 조건을 말하면 어울리는 시터를 추천받습니다.',
+    to: '/ai-chat',
+    cta: '추천받기',
+  },
 ];
 
 // 메인 홈 페이지입니다.
@@ -148,6 +154,12 @@ function SignedInHome() {
         </div>
         <div className="flex gap-2">
           <Link
+            to="/ai-chat"
+            className="rounded-xl bg-[#2A2622] px-4 py-2.5 text-sm font-black text-white shadow-sm"
+          >
+            AI 추천
+          </Link>
+          <Link
             to="/sitters"
             className="rounded-xl border border-[#E7DCD1] bg-white px-4 py-2.5 text-sm font-black text-[#2A2622] shadow-sm"
           >
@@ -162,7 +174,7 @@ function SignedInHome() {
         </div>
       </section>
 
-      <section className="mt-6 grid gap-4 md:grid-cols-3">
+      <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {onboardingCards.map((card) => (
           <article key={card.title} className="fp-shell-card rounded-2xl p-5">
             <h2 className="text-xl font-black text-[#2A2622]">{card.title}</h2>

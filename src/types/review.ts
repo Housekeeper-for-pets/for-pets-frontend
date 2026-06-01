@@ -17,6 +17,17 @@ export interface Review {
   updatedAt?: ISODateTimeString;
 }
 
+export interface MyWrittenReview {
+  id: Id;
+  reservationId: Id;
+  revieweeId: Id;
+  revieweeNickname: string;
+  sitterProfileId: Id;
+  rating: number;
+  reviewComment: string;
+  createdAt?: ISODateTimeString;
+}
+
 export interface ReviewPageResponse {
   content: Review[];
   totalElements: number;

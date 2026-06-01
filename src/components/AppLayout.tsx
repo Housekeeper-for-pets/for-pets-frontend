@@ -15,6 +15,7 @@ const navItems = [
   { to: '/chat', label: '채팅', icon: 'chat', group: '매칭' },
   { to: '/posts', label: '공고 보기', icon: 'post', group: '매칭' },
   { to: '/sitters', label: '시터 찾기', icon: 'sitter', group: '매칭' },
+  { to: '/ai-chat', label: 'AI 추천', icon: 'spark', group: '매칭' },
   { to: '/admin', label: '관리자', icon: 'badge', group: '관리' },
 ];
 
@@ -31,6 +32,7 @@ const iconPaths = {
   badge: 'M12 3l7 4v5c0 4.2-2.8 7.2-7 9-4.2-1.8-7-4.8-7-9V7l7-4Z M9 12l2 2 4-4',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M5 21a7 7 0 0 1 14 0',
   bell: 'M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z M10 21h4',
+  spark: 'M12 3l1.6 4.9L18.5 9.5l-4.9 1.6L12 16l-1.6-4.9-4.9-1.6 4.9-1.6L12 3Z M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8L19 14Z M5 15l.9 2.1L8 18l-2.1.9L5 21l-.9-2.1L2 18l2.1-.9L5 15Z',
 } as const;
 
 type NavIconName = keyof typeof iconPaths;
@@ -274,7 +276,6 @@ function AppLayout() {
               <nav className="flex min-w-0 flex-1 gap-2 overflow-x-auto lg:hidden">
                 {navItems
                   .filter((item) => item.to !== '/admin' || member?.role === 'ADMIN')
-                  .slice(0, 7)
                   .map((item) => (
                   <NavLink
                     key={item.to}

@@ -3,6 +3,7 @@ import type {
   ApiResponse,
   CreateReviewRequest,
   Id,
+  MyWrittenReview,
   Review,
   ReviewPageResponse,
   ReviewSearchQuery,
@@ -33,6 +34,13 @@ export const getSitterReviews = async (
     `/reviews/sitters/${sitterId}`,
     { params: query },
   );
+
+  return response.data;
+};
+
+export const getMyWrittenReviews = async () => {
+  const response =
+    await axiosInstance.get<ApiResponse<MyWrittenReview[]>>('/reviews/me');
 
   return response.data;
 };

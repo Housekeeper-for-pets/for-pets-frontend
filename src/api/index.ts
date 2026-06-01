@@ -1,4 +1,5 @@
 export * from './adminApi';
+export * from './aiChatApi';
 export * from './aiReviewSummaryApi';
 export * from './authApi';
 export * from './careLogApi';

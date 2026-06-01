@@ -1,4 +1,5 @@
 export type * from './aiReviewSummary';
+export type * from './aiChat';
 export type * from './auth';
 export type * from './careLog';
 export type * from './careRequest';
