@@ -1,7 +1,11 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { getSitterReviewSummary, sendAiChatMessage } from '../api';
+import {
+  generateSitterReviewSummary,
+  getSitterReviewSummary,
+  sendAiChatMessage,
+} from '../api';
 import {
   dayOfWeekLabels,
   getRegionLabel,
@@ -61,17 +65,20 @@ const enrichRecommendedSittersWithReviewSummaries = async (
       if (sitter.reviewSummary?.trim()) return sitter;
 
       const summaryResult = await getSitterReviewSummary(sitter.sitterId);
+      const resolvedSummaryResult = summaryResult.success
+        ? summaryResult
+        : await generateSitterReviewSummary(sitter.sitterId);
 
-      if (!summaryResult.success) return sitter;
+      if (!resolvedSummaryResult.success) return sitter;
 
       return {
         ...sitter,
-        reviewSummary: summaryResult.data.summary,
-        strengths: summaryResult.data.strengths.length
-          ? summaryResult.data.strengths
+        reviewSummary: resolvedSummaryResult.data.summary,
+        strengths: resolvedSummaryResult.data.strengths.length
+          ? resolvedSummaryResult.data.strengths
           : sitter.strengths,
-        cautions: summaryResult.data.cautions.length
-          ? summaryResult.data.cautions
+        cautions: resolvedSummaryResult.data.cautions.length
+          ? resolvedSummaryResult.data.cautions
           : sitter.cautions,
       };
     }),
@@ -101,6 +108,7 @@ function AiSitterChatPage() {
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [currentRecommendationIndex, setCurrentRecommendationIndex] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const latestRecommendedSitters = useMemo(() => {
@@ -113,6 +121,34 @@ function AiSitterChatPage() {
 
     return assistantWithRecommendations?.recommendedSitters ?? [];
   }, [messages]);
+
+  const latestUserQuestion = useMemo(
+    () => [...messages].reverse().find((item) => item.role === 'user')?.content,
+    [messages],
+  );
+
+  const currentRecommendedSitter =
+    latestRecommendedSitters[currentRecommendationIndex] ??
+    latestRecommendedSitters[0];
+  const recommendationCount = latestRecommendedSitters.length;
+  const currentRecommendationNumber =
+    recommendationCount > 0 ? currentRecommendationIndex + 1 : 0;
+
+  useEffect(() => {
+    setCurrentRecommendationIndex(0);
+  }, [latestRecommendedSitters]);
+
+  const moveRecommendation = (direction: 'prev' | 'next') => {
+    if (!recommendationCount) return;
+
+    setCurrentRecommendationIndex((prevIndex) => {
+      if (direction === 'prev') {
+        return prevIndex === 0 ? recommendationCount - 1 : prevIndex - 1;
+      }
+
+      return prevIndex === recommendationCount - 1 ? 0 : prevIndex + 1;
+    });
+  };
 
   const sendMessage = async (nextMessage: string) => {
     const trimmedMessage = nextMessage.trim();
@@ -184,12 +220,14 @@ function AiSitterChatPage() {
         </Link>
       </section>
 
-      <section className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_420px]">
-        <div className="fp-shell-card flex min-h-[660px] flex-col rounded-2xl p-0">
+      <section className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_420px] lg:items-start">
+        <div className="fp-shell-card flex h-[calc(100vh-220px)] min-h-[560px] max-h-[760px] flex-col rounded-2xl p-0">
           <div className="border-b border-[#EFE5DA] px-5 py-4">
             <p className="text-sm font-black text-[#2A2622]">추천 상담</p>
             <p className="mt-1 text-xs font-semibold text-[#8C8075]">
-              500자 이내로 조건을 입력하세요.
+              {latestUserQuestion
+                ? `최근 질문: ${latestUserQuestion}`
+                : '500자 이내로 조건을 입력하세요.'}
             </p>
           </div>
 
@@ -254,15 +292,42 @@ function AiSitterChatPage() {
           </div>
         </div>
 
-        <aside className="space-y-4">
+        <aside className="space-y-4 lg:sticky lg:top-24">
           <div className="fp-shell-card rounded-2xl p-5">
-            <p className="fp-kicker">RECOMMENDED</p>
-            <h2 className="mt-2 text-xl font-black text-[#2A2622]">
-              추천 시터 {latestRecommendedSitters.length}명
-            </h2>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="fp-kicker">RECOMMENDED</p>
+                <h2 className="mt-2 text-xl font-black text-[#2A2622]">
+                  추천 시터 {recommendationCount}명
+                </h2>
+              </div>
+              {recommendationCount > 0 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="grid h-9 w-9 place-items-center rounded-full border border-[#E7DCD1] bg-white text-lg font-black text-[#6F675F] transition hover:border-[#D96F4F] hover:text-[#D96F4F]"
+                    aria-label="이전 추천 시터"
+                    onClick={() => moveRecommendation('prev')}
+                  >
+                    ‹
+                  </button>
+                  <span className="min-w-12 text-center text-sm font-black text-[#2A2622]">
+                    {currentRecommendationNumber}/{recommendationCount}
+                  </span>
+                  <button
+                    type="button"
+                    className="grid h-9 w-9 place-items-center rounded-full border border-[#E7DCD1] bg-white text-lg font-black text-[#6F675F] transition hover:border-[#D96F4F] hover:text-[#D96F4F]"
+                    aria-label="다음 추천 시터"
+                    onClick={() => moveRecommendation('next')}
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
-          {latestRecommendedSitters.length === 0 ? (
+          {!currentRecommendedSitter ? (
             <div className="rounded-2xl border border-dashed border-[#E3D6C8] bg-[#FFFCF8] p-6 text-center">
               <p className="text-sm font-black text-[#2A2622]">
                 아직 추천된 시터가 없습니다.
@@ -272,59 +337,58 @@ function AiSitterChatPage() {
               </p>
             </div>
           ) : (
-            latestRecommendedSitters.map((sitter) => (
-              <article
-                key={sitter.sitterId}
-                className="rounded-2xl border border-[#EFE5DA] bg-white p-5 shadow-sm"
-              >
+            <article
+              key={currentRecommendedSitter.sitterId}
+              className="rounded-2xl border border-[#EFE5DA] bg-white p-5 shadow-sm"
+            >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-black text-[#D96F4F]">
-                      {getRegionLabel(sitter.region)}
+                      {getRegionLabel(currentRecommendedSitter.region)}
                     </p>
                     <h3 className="mt-1 text-lg font-black text-[#2A2622]">
-                      시터 #{sitter.sitterId}
+                      시터 #{currentRecommendedSitter.sitterId}
                     </h3>
                   </div>
                   <span
                     className={[
                       'rounded-full px-3 py-1 text-xs font-black',
-                      sitter.status === 'RESERVABLE'
+                      currentRecommendedSitter.status === 'RESERVABLE'
                         ? 'bg-[#E5F5E8] text-[#308047]'
                         : 'bg-[#F4E9DE] text-[#8C8075]',
                     ].join(' ')}
                   >
-                    {sitterStatusLabels[sitter.status]}
+                    {sitterStatusLabels[currentRecommendedSitter.status]}
                   </span>
                 </div>
 
                 <p className="mt-4 line-clamp-3 text-sm font-medium leading-6 text-[#6F675F]">
-                  {sitter.introduction || '등록된 소개글이 없습니다.'}
+                  {currentRecommendedSitter.introduction || '등록된 소개글이 없습니다.'}
                 </p>
 
                 <dl className="mt-4 grid grid-cols-2 gap-2 text-xs font-bold text-[#6F675F]">
                   <div className="rounded-xl bg-[#FFFCF8] p-3">
                     <dt className="text-[#B7AA9D]">가능 동물</dt>
                     <dd className="mt-1 text-[#2A2622]">
-                      {possiblePetTypeLabels[sitter.possiblePetType]}
+                      {possiblePetTypeLabels[currentRecommendedSitter.possiblePetType]}
                     </dd>
                   </div>
                   <div className="rounded-xl bg-[#FFFCF8] p-3">
                     <dt className="text-[#B7AA9D]">가능 크기</dt>
                     <dd className="mt-1 text-[#2A2622]">
-                      {possiblePetSizeLabels[sitter.possiblePetSize]}
+                      {possiblePetSizeLabels[currentRecommendedSitter.possiblePetSize]}
                     </dd>
                   </div>
                   <div className="rounded-xl bg-[#FFFCF8] p-3">
                     <dt className="text-[#B7AA9D]">경력</dt>
                     <dd className="mt-1 text-[#2A2622]">
-                      {sitter.experienceYears}년
+                      {currentRecommendedSitter.experienceYears}년
                     </dd>
                   </div>
                   <div className="rounded-xl bg-[#FFFCF8] p-3">
                     <dt className="text-[#B7AA9D]">시간당</dt>
                     <dd className="mt-1 text-[#2A2622]">
-                      {formatPrice(sitter.pricePerHour)}
+                      {formatPrice(currentRecommendedSitter.pricePerHour)}
                     </dd>
                   </div>
                 </dl>
@@ -332,27 +396,29 @@ function AiSitterChatPage() {
                 <div className="mt-4 rounded-xl bg-[#F6EFE7] p-3">
                   <p className="text-xs font-black text-[#B85B3D]">리뷰 요약</p>
                   <p className="mt-2 text-sm font-semibold leading-6 text-[#5E544B]">
-                    {sitter.reviewSummary || '아직 리뷰 요약이 없습니다.'}
+                    {currentRecommendedSitter.reviewSummary ||
+                      '리뷰가 충분하지 않아 요약을 만들 수 없습니다.'}
                   </p>
                 </div>
 
-                {(sitter.strengths.length > 0 || sitter.cautions.length > 0) && (
+                {(currentRecommendedSitter.strengths.length > 0 ||
+                  currentRecommendedSitter.cautions.length > 0) && (
                   <div className="mt-4 grid gap-3 text-sm font-semibold leading-6">
-                    {sitter.strengths.length > 0 && (
+                    {currentRecommendedSitter.strengths.length > 0 && (
                       <div>
                         <p className="text-xs font-black text-[#308047]">강점</p>
                         <ul className="mt-1 space-y-1 text-[#5E544B]">
-                          {sitter.strengths.map((strength) => (
+                          {currentRecommendedSitter.strengths.map((strength) => (
                             <li key={strength}>· {strength}</li>
                           ))}
                         </ul>
                       </div>
                     )}
-                    {sitter.cautions.length > 0 && (
+                    {currentRecommendedSitter.cautions.length > 0 && (
                       <div>
                         <p className="text-xs font-black text-[#B85B3D]">확인할 점</p>
                         <ul className="mt-1 space-y-1 text-[#5E544B]">
-                          {sitter.cautions.map((caution) => (
+                          {currentRecommendedSitter.cautions.map((caution) => (
                             <li key={caution}>· {caution}</li>
                           ))}
                         </ul>
@@ -362,25 +428,24 @@ function AiSitterChatPage() {
                 )}
 
                 <p className="mt-4 text-xs font-bold leading-5 text-[#8C8075]">
-                  {buildScheduleSummary(sitter)}
+                  {buildScheduleSummary(currentRecommendedSitter)}
                 </p>
 
                 <div className="mt-5 grid grid-cols-2 gap-2">
                   <Link
-                    to={`/sitters/${sitter.sitterId}`}
+                    to={`/sitters/${currentRecommendedSitter.sitterId}`}
                     className="rounded-xl border border-[#E7DCD1] bg-white px-3 py-2.5 text-center text-sm font-black text-[#2A2622]"
                   >
                     상세 보기
                   </Link>
                   <Link
-                    to={`/sitters/${sitter.sitterId}/requests/new`}
+                    to={`/sitters/${currentRecommendedSitter.sitterId}/requests/new`}
                     className="rounded-xl bg-[#D96F4F] px-3 py-2.5 text-center text-sm font-black text-white"
                   >
                     요청하기
                   </Link>
                 </div>
               </article>
-            ))
           )}
         </aside>
       </section>
