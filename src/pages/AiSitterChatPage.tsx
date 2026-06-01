@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { sendAiChatMessage } from '../api';
+import { getSitterReviewSummary, sendAiChatMessage } from '../api';
 import {
   dayOfWeekLabels,
   getRegionLabel,
@@ -53,6 +53,49 @@ const buildScheduleSummary = (sitter: RecommendedSitter) => {
     .join(', ');
 };
 
+const enrichRecommendedSittersWithReviewSummaries = async (
+  sitters: RecommendedSitter[],
+) => {
+  const enrichedSitters = await Promise.all(
+    sitters.map(async (sitter) => {
+      if (sitter.reviewSummary?.trim()) return sitter;
+
+      const summaryResult = await getSitterReviewSummary(sitter.sitterId);
+
+      if (!summaryResult.success) return sitter;
+
+      return {
+        ...sitter,
+        reviewSummary: summaryResult.data.summary,
+        strengths: summaryResult.data.strengths.length
+          ? summaryResult.data.strengths
+          : sitter.strengths,
+        cautions: summaryResult.data.cautions.length
+          ? summaryResult.data.cautions
+          : sitter.cautions,
+      };
+    }),
+  );
+
+  return enrichedSitters;
+};
+
+const normalizeAnswerWithReviewSummaries = (
+  answer: string,
+  sitters: RecommendedSitter[],
+) => {
+  const hasReviewSummary = sitters.some((sitter) => sitter.reviewSummary?.trim());
+
+  if (!hasReviewSummary) return answer;
+
+  return answer
+    .replace(
+      '아직 리뷰 요약은 없지만,',
+      '리뷰 요약도 함께 확인해 보니,',
+    )
+    .replace('아직 리뷰 요약은 없지만', '리뷰 요약도 함께 확인해 보니');
+};
+
 function AiSitterChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [message, setMessage] = useState('');
@@ -90,13 +133,21 @@ function AiSitterChatPage() {
     const result = await sendAiChatMessage({ message: trimmedMessage });
 
     if (result.success) {
+      const recommendedSitters = await enrichRecommendedSittersWithReviewSummaries(
+        result.data.recommendedSitters,
+      );
+      const answer = normalizeAnswerWithReviewSummaries(
+        result.data.answer,
+        recommendedSitters,
+      );
+
       setMessages((prevMessages) => [
         ...prevMessages,
         {
           id: `assistant-${Date.now()}`,
           role: 'assistant',
-          content: result.data.answer,
-          recommendedSitters: result.data.recommendedSitters,
+          content: answer,
+          recommendedSitters,
         },
       ]);
     } else {
