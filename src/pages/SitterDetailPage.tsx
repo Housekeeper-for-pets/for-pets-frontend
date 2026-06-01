@@ -39,6 +39,9 @@ const formatDateTime = (value?: string) => {
   }).format(new Date(value));
 };
 
+const isReviewSummaryNotFound = (code?: string) =>
+  code === 'REVIEW_SUMMARY_NOT_FOUND' || code === 'AI_REVIEW_SUMMARY_NOT_FOUND';
+
 // 특정 시터의 프로필과 가능 시간을 보여주는 상세 페이지입니다.
 function SitterDetailPage() {
   const navigate = useNavigate();
@@ -88,17 +91,40 @@ function SitterDetailPage() {
           );
         }
 
+        const nextReviewTotalElements =
+          reviewsResult.status === 'fulfilled' && reviewsResult.value.success
+            ? reviewsResult.value.data.totalElements
+            : 0;
+
         if (reviewsResult.status === 'fulfilled' && reviewsResult.value.success) {
           setReviews(reviewsResult.value.data.content);
-          setReviewTotalElements(reviewsResult.value.data.totalElements);
+          setReviewTotalElements(nextReviewTotalElements);
         }
 
         if (summaryResult.status === 'fulfilled' && summaryResult.value.success) {
           setReviewSummary(summaryResult.value.data);
+        } else if (
+          nextReviewTotalElements > 0 &&
+          summaryResult.status === 'fulfilled' &&
+          !summaryResult.value.success &&
+          isReviewSummaryNotFound(summaryResult.value.error.code)
+        ) {
+          setIsGeneratingSummary(true);
+          setReviewMessage('첫 리뷰 요약을 생성하는 중입니다.');
+
+          const generateResult = await generateSitterReviewSummary(nextSitterId);
+
+          if (generateResult.success) {
+            setReviewSummary(generateResult.data);
+            setReviewMessage('');
+          } else {
+            setReviewMessage(generateResult.error.message);
+          }
         }
       } catch {
         setErrorMessage('시터 정보를 불러오지 못했습니다.');
       } finally {
+        setIsGeneratingSummary(false);
         setIsLoading(false);
       }
     };
@@ -132,7 +158,7 @@ function SitterDetailPage() {
   };
 
   const handleGenerateSummary = async () => {
-    if (!sitter) return;
+    if (!sitter || isGeneratingSummary) return;
 
     setReviewMessage('');
     setIsGeneratingSummary(true);
@@ -383,8 +409,11 @@ function SitterDetailPage() {
             </div>
           ) : (
             <p className="mt-5 rounded-2xl bg-[#FAF6F1] p-4 text-sm leading-6 text-[#6F675F]">
-              아직 생성된 리뷰 요약이 없습니다. 리뷰가 쌓이면 요약을 생성해 시터의
-              강점과 주의할 점을 빠르게 확인할 수 있습니다.
+              {isGeneratingSummary
+                ? '리뷰를 바탕으로 요약을 생성하고 있습니다.'
+                : reviews.length > 0
+                  ? '요약을 불러오지 못했습니다. 잠시 후 다시 갱신해 주세요.'
+                  : '리뷰가 쌓이면 시터의 강점과 주의할 점을 요약해 보여드립니다.'}
             </p>
           )}
 
