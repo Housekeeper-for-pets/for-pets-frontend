@@ -220,8 +220,8 @@ function AiSitterChatPage() {
         </Link>
       </section>
 
-      <section className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_420px] lg:items-start">
-        <div className="fp-shell-card flex h-[calc(100vh-220px)] min-h-[560px] max-h-[760px] flex-col rounded-2xl p-0">
+      <section className="mt-6 grid gap-5 lg:h-[calc(100vh-220px)] lg:min-h-[620px] lg:max-h-[820px] lg:grid-cols-[minmax(0,1.25fr)_420px] lg:items-stretch">
+        <div className="fp-shell-card flex min-h-[620px] flex-col rounded-2xl p-0 lg:min-h-0">
           <div className="border-b border-[#EFE5DA] px-5 py-4">
             <p className="text-sm font-black text-[#2A2622]">추천 상담</p>
             <p className="mt-1 text-xs font-semibold text-[#8C8075]">
@@ -231,7 +231,7 @@ function AiSitterChatPage() {
             </p>
           </div>
 
-          <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-5">
             {messages.map((chatMessage) => (
               <article
                 key={chatMessage.id}
@@ -292,43 +292,18 @@ function AiSitterChatPage() {
           </div>
         </div>
 
-        <aside className="space-y-4 lg:sticky lg:top-24">
-          <div className="fp-shell-card rounded-2xl p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="fp-kicker">RECOMMENDED</p>
-                <h2 className="mt-2 text-xl font-black text-[#2A2622]">
-                  추천 시터 {recommendationCount}명
-                </h2>
-              </div>
-              {recommendationCount > 0 && (
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    className="grid h-9 w-9 place-items-center rounded-full border border-[#E7DCD1] bg-white text-lg font-black text-[#6F675F] transition hover:border-[#D96F4F] hover:text-[#D96F4F]"
-                    aria-label="이전 추천 시터"
-                    onClick={() => moveRecommendation('prev')}
-                  >
-                    ‹
-                  </button>
-                  <span className="min-w-12 text-center text-sm font-black text-[#2A2622]">
-                    {currentRecommendationNumber}/{recommendationCount}
-                  </span>
-                  <button
-                    type="button"
-                    className="grid h-9 w-9 place-items-center rounded-full border border-[#E7DCD1] bg-white text-lg font-black text-[#6F675F] transition hover:border-[#D96F4F] hover:text-[#D96F4F]"
-                    aria-label="다음 추천 시터"
-                    onClick={() => moveRecommendation('next')}
-                  >
-                    ›
-                  </button>
-                </div>
-              )}
+        <aside className="flex min-h-[620px] flex-col gap-4 lg:min-h-0">
+          <div className="fp-shell-card shrink-0 rounded-2xl p-5">
+            <div>
+              <p className="fp-kicker">RECOMMENDED</p>
+              <h2 className="mt-2 text-xl font-black text-[#2A2622]">
+                추천 시터 {recommendationCount}명
+              </h2>
             </div>
           </div>
 
           {!currentRecommendedSitter ? (
-            <div className="rounded-2xl border border-dashed border-[#E3D6C8] bg-[#FFFCF8] p-6 text-center">
+            <div className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-[#E3D6C8] bg-[#FFFCF8] p-6 text-center">
               <p className="text-sm font-black text-[#2A2622]">
                 아직 추천된 시터가 없습니다.
               </p>
@@ -339,8 +314,9 @@ function AiSitterChatPage() {
           ) : (
             <article
               key={currentRecommendedSitter.sitterId}
-              className="rounded-2xl border border-[#EFE5DA] bg-white p-5 shadow-sm"
+              className="flex min-h-0 flex-1 flex-col rounded-2xl border border-[#EFE5DA] bg-white shadow-sm"
             >
+              <div className="min-h-0 flex-1 overflow-y-auto p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-black text-[#D96F4F]">
@@ -430,8 +406,34 @@ function AiSitterChatPage() {
                 <p className="mt-4 text-xs font-bold leading-5 text-[#8C8075]">
                   {buildScheduleSummary(currentRecommendedSitter)}
                 </p>
+              </div>
 
-                <div className="mt-5 grid grid-cols-2 gap-2">
+              <div className="shrink-0 border-t border-[#EFE5DA] bg-white p-5">
+                {recommendationCount > 0 && (
+                  <div className="mb-4 flex items-center justify-center gap-4">
+                    <button
+                      type="button"
+                      className="grid h-10 w-10 place-items-center rounded-full border border-[#E7DCD1] bg-white text-xl font-black text-[#6F675F] transition hover:border-[#D96F4F] hover:text-[#D96F4F]"
+                      aria-label="이전 추천 시터"
+                      onClick={() => moveRecommendation('prev')}
+                    >
+                      ‹
+                    </button>
+                    <span className="min-w-14 text-center text-sm font-black text-[#2A2622]">
+                      {currentRecommendationNumber}/{recommendationCount}
+                    </span>
+                    <button
+                      type="button"
+                      className="grid h-10 w-10 place-items-center rounded-full border border-[#E7DCD1] bg-white text-xl font-black text-[#6F675F] transition hover:border-[#D96F4F] hover:text-[#D96F4F]"
+                      aria-label="다음 추천 시터"
+                      onClick={() => moveRecommendation('next')}
+                    >
+                      ›
+                    </button>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2">
                   <Link
                     to={`/sitters/${currentRecommendedSitter.sitterId}`}
                     className="rounded-xl border border-[#E7DCD1] bg-white px-3 py-2.5 text-center text-sm font-black text-[#2A2622]"
@@ -445,6 +447,7 @@ function AiSitterChatPage() {
                     요청하기
                   </Link>
                 </div>
+              </div>
               </article>
           )}
         </aside>
