@@ -109,6 +109,7 @@ function AiSitterChatPage() {
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [currentRecommendationIndex, setCurrentRecommendationIndex] = useState(0);
+  const [areSuggestionsOpen, setAreSuggestionsOpen] = useState(true);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const latestRecommendedSitters = useMemo(() => {
@@ -164,6 +165,7 @@ function AiSitterChatPage() {
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setMessage('');
     setErrorMessage('');
+    setAreSuggestionsOpen(false);
     setIsSending(true);
 
     const result = await sendAiChatMessage({ message: trimmedMessage });
@@ -200,11 +202,11 @@ function AiSitterChatPage() {
   };
 
   return (
-    <main className="mx-auto max-w-7xl px-5 py-7 lg:px-8">
+    <main className="mx-auto max-w-7xl px-5 py-5 lg:px-8">
       <section className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <p className="fp-kicker">AI SITTER MATCH</p>
-          <h1 className="mt-3 text-3xl font-black tracking-tight text-[#2A2622]">
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-[#2A2622]">
             AI 시터 추천
           </h1>
           <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-[#7D7368]">
@@ -220,8 +222,8 @@ function AiSitterChatPage() {
         </Link>
       </section>
 
-      <section className="mt-6 grid gap-5 lg:h-[calc(100vh-220px)] lg:min-h-[620px] lg:max-h-[820px] lg:grid-cols-[minmax(0,1.25fr)_420px] lg:items-stretch">
-        <div className="fp-shell-card flex min-h-[620px] flex-col rounded-2xl p-0 lg:min-h-0">
+      <section className="mt-4 grid gap-5 lg:h-[calc(100vh-180px)] lg:min-h-[700px] lg:grid-cols-[minmax(0,1.15fr)_460px] lg:items-stretch">
+        <div className="fp-shell-card flex min-h-[700px] flex-col rounded-2xl p-0 lg:min-h-0">
           <div className="border-b border-[#EFE5DA] px-5 py-4">
             <p className="text-sm font-black text-[#2A2622]">추천 상담</p>
             <p className="mt-1 text-xs font-semibold text-[#8C8075]">
@@ -248,30 +250,40 @@ function AiSitterChatPage() {
 
             {isSending && (
               <div className="inline-flex rounded-2xl bg-[#F6EFE7] px-4 py-3 text-sm font-black text-[#8C8075]">
-                추천 결과를 찾는 중...
+                추천 결과와 리뷰 요약을 함께 확인하는 중...
               </div>
             )}
           </div>
 
           <div className="border-t border-[#EFE5DA] px-5 py-4">
-            <div className="mb-3 flex flex-wrap gap-2">
-              {promptSuggestions.map((suggestion) => (
-                <button
-                  key={suggestion}
-                  type="button"
-                  className="rounded-full border border-[#E7DCD1] bg-white px-3 py-1.5 text-xs font-bold text-[#6F675F] transition hover:border-[#D96F4F] hover:text-[#D96F4F]"
-                  onClick={() => void sendMessage(suggestion)}
-                  disabled={isSending}
-                >
-                  {suggestion}
-                </button>
-              ))}
-            </div>
+            {areSuggestionsOpen ? (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {promptSuggestions.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    className="rounded-full border border-[#E7DCD1] bg-white px-3 py-1.5 text-xs font-bold text-[#6F675F] transition hover:border-[#D96F4F] hover:text-[#D96F4F]"
+                    onClick={() => void sendMessage(suggestion)}
+                    disabled={isSending}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="mb-3 inline-flex h-8 items-center gap-2 rounded-full border border-[#E7DCD1] bg-white px-3 text-xs font-black text-[#6F675F] transition hover:border-[#D96F4F] hover:text-[#D96F4F]"
+                onClick={() => setAreSuggestionsOpen(true)}
+              >
+                ⌃ 예시 질문 열기
+              </button>
+            )}
 
             <form className="grid gap-3 md:grid-cols-[1fr_auto]" onSubmit={handleSubmit}>
               <textarea
                 ref={inputRef}
-                className="min-h-24 resize-none rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm font-semibold text-[#2A2622] outline-none transition placeholder:text-[#B7AA9D] focus:border-[#D96F4F] focus:ring-4 focus:ring-[#D96F4F]/10"
+                className="min-h-20 resize-none rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm font-semibold text-[#2A2622] outline-none transition placeholder:text-[#B7AA9D] focus:border-[#D96F4F] focus:ring-4 focus:ring-[#D96F4F]/10"
                 maxLength={500}
                 placeholder="예: 마포구에 살고, 분리불안 있는 소형견을 방문 돌봄으로 맡기고 싶어요."
                 value={message}
@@ -292,30 +304,32 @@ function AiSitterChatPage() {
           </div>
         </div>
 
-        <aside className="flex min-h-[620px] flex-col gap-4 lg:min-h-0">
-          <div className="fp-shell-card shrink-0 rounded-2xl p-5">
-            <div>
+        <aside className="flex min-h-[700px] flex-col lg:min-h-0">
+          <section className="flex min-h-0 flex-1 flex-col rounded-2xl border border-[#EFE5DA] bg-white shadow-sm">
+            <div className="shrink-0 border-b border-[#EFE5DA] p-5">
               <p className="fp-kicker">RECOMMENDED</p>
               <h2 className="mt-2 text-xl font-black text-[#2A2622]">
                 추천 시터 {recommendationCount}명
               </h2>
             </div>
-          </div>
 
-          {!currentRecommendedSitter ? (
-            <div className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-[#E3D6C8] bg-[#FFFCF8] p-6 text-center">
-              <p className="text-sm font-black text-[#2A2622]">
-                아직 추천된 시터가 없습니다.
-              </p>
-              <p className="mt-2 text-sm font-medium leading-6 text-[#7D7368]">
-                지역과 반려동물 조건을 알려주면 이곳에 추천 카드가 표시됩니다.
-              </p>
-            </div>
-          ) : (
-            <article
-              key={currentRecommendedSitter.sitterId}
-              className="flex min-h-0 flex-1 flex-col rounded-2xl border border-[#EFE5DA] bg-white shadow-sm"
-            >
+            {!currentRecommendedSitter ? (
+              <div className="flex flex-1 items-center justify-center p-6 text-center">
+                <div className="max-w-xs rounded-2xl border border-dashed border-[#E3D6C8] bg-[#FFFCF8] p-6">
+                  <p className="text-sm font-black text-[#2A2622]">
+                    아직 추천된 시터가 없습니다.
+                  </p>
+                  <p className="mt-2 text-sm font-medium leading-6 text-[#7D7368]">
+                    왼쪽 채팅에 지역, 반려동물 종류, 걱정되는 점을 입력하면 추천
+                    시터 카드가 표시됩니다.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <article
+                key={currentRecommendedSitter.sitterId}
+                className="flex min-h-0 flex-1 flex-col"
+              >
               <div className="min-h-0 flex-1 overflow-y-auto p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -449,7 +463,8 @@ function AiSitterChatPage() {
                 </div>
               </div>
               </article>
-          )}
+            )}
+          </section>
         </aside>
       </section>
     </main>
