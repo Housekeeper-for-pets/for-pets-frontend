@@ -386,7 +386,7 @@ function MyProfilePage() {
                 to="/my-reviews"
                 className="rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm font-bold text-[#2A2622]"
               >
-                내가 쓴 후기
+                내 후기
               </Link>
               <Link
                 to={member.role === 'SITTER' ? '/my-sitter' : '/my-sitter?mode=register'}

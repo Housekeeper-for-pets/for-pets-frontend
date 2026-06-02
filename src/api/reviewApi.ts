@@ -3,7 +3,8 @@ import type {
   ApiResponse,
   CreateReviewRequest,
   Id,
-  MyWrittenReview,
+  MyReceivedReviewPageResponse,
+  MyWrittenReviewPageResponse,
   Review,
   ReviewPageResponse,
   ReviewSearchQuery,
@@ -38,9 +39,18 @@ export const getSitterReviews = async (
   return response.data;
 };
 
-export const getMyWrittenReviews = async () => {
-  const response =
-    await axiosInstance.get<ApiResponse<MyWrittenReview[]>>('/reviews/me');
+export const getMyWrittenReviews = async (query?: ReviewSearchQuery) => {
+  const response = await axiosInstance.get<
+    ApiResponse<MyWrittenReviewPageResponse>
+  >('/reviews/me', { params: query });
+
+  return response.data;
+};
+
+export const getMyReceivedReviews = async (query?: ReviewSearchQuery) => {
+  const response = await axiosInstance.get<
+    ApiResponse<MyReceivedReviewPageResponse>
+  >('/reviews/me/received', { params: query });
 
   return response.data;
 };
