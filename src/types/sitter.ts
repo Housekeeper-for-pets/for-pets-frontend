@@ -36,6 +36,8 @@ export interface SitterProfile {
   possiblePetType: PossiblePetType;
   possiblePetSize: PossiblePetSize;
   pricePerHour: number;
+  averageRating?: number | string | null;
+  reviewCount?: number;
   status: SitterProfileStatus;
   approvalStatus?: SitterApprovalStatus;
   schedules: SitterSchedule[];
@@ -53,6 +55,7 @@ export interface SitterSearchQuery extends PageQuery {
   possiblePetSize?: PossiblePetSize;
   minPrice?: number;
   maxPrice?: number;
+  direction?: 'asc' | 'desc';
 }
 
 export interface UpdateSitterStatusRequest {

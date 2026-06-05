@@ -1,11 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  generateSitterReviewSummary,
-  getSitterReviewSummary,
-  sendAiChatMessage,
-} from '../api';
+import { getSitterReviewSummary, sendAiChatMessage } from '../api';
 import {
   dayOfWeekLabels,
   getRegionLabel,
@@ -65,20 +61,17 @@ const enrichRecommendedSittersWithReviewSummaries = async (
       if (sitter.reviewSummary?.trim()) return sitter;
 
       const summaryResult = await getSitterReviewSummary(sitter.sitterId);
-      const resolvedSummaryResult = summaryResult.success
-        ? summaryResult
-        : await generateSitterReviewSummary(sitter.sitterId);
 
-      if (!resolvedSummaryResult.success) return sitter;
+      if (!summaryResult.success) return sitter;
 
       return {
         ...sitter,
-        reviewSummary: resolvedSummaryResult.data.summary,
-        strengths: resolvedSummaryResult.data.strengths.length
-          ? resolvedSummaryResult.data.strengths
+        reviewSummary: summaryResult.data.summary,
+        strengths: summaryResult.data.strengths.length
+          ? summaryResult.data.strengths
           : sitter.strengths,
-        cautions: resolvedSummaryResult.data.cautions.length
-          ? resolvedSummaryResult.data.cautions
+        cautions: summaryResult.data.cautions.length
+          ? summaryResult.data.cautions
           : sitter.cautions,
       };
     }),

@@ -22,6 +22,7 @@ const initialQuery: SitterSearchQuery = {
   page: 0,
   size: 10,
   sort: 'createdAt',
+  direction: 'desc',
 };
 
 const possiblePetTypeOptions: Array<{ value: PossiblePetType; label: string }> = [
@@ -49,6 +50,7 @@ const buildQuery = (query: SitterSearchQuery): SitterSearchQuery => {
     page: 0,
     size: query.size,
     sort: query.sort,
+    direction: query.direction,
   };
 
   if (query.region) nextQuery.region = query.region;
@@ -58,6 +60,12 @@ const buildQuery = (query: SitterSearchQuery): SitterSearchQuery => {
   if (query.maxPrice) nextQuery.maxPrice = query.maxPrice;
 
   return nextQuery;
+};
+
+const formatRating = (value?: number | string | null) => {
+  if (value === undefined || value === null) return '0.0';
+
+  return Number(value).toFixed(1);
 };
 
 // 조건 기반으로 시터를 검색하고 목록을 보여주는 페이지입니다.
@@ -212,14 +220,21 @@ function SittersPage() {
         <select
           aria-label="정렬"
           className={selectClassName}
-          value={query.sort}
-          onChange={(event) =>
-            setQuery((prevQuery) => ({ ...prevQuery, sort: event.target.value }))
-          }
+          value={`${query.sort ?? 'createdAt'}:${query.direction ?? 'desc'}`}
+          onChange={(event) => {
+            const [sort, direction] = event.target.value.split(':');
+
+            setQuery((prevQuery) => ({
+              ...prevQuery,
+              sort,
+              direction: direction as 'asc' | 'desc',
+            }));
+          }}
         >
-          <option value="createdAt">최근 등록순</option>
-          <option value="pricePerHour">요금 낮은순</option>
-          <option value="experienceYears">경력 높은순</option>
+          <option value="createdAt:desc">최근 등록순</option>
+          <option value="averageRating:desc">평점 높은순</option>
+          <option value="pricePerHour:asc">요금 낮은순</option>
+          <option value="experienceYears:desc">경력 높은순</option>
         </select>
 
         <button
@@ -280,7 +295,19 @@ function SittersPage() {
               {sitter.introduction || '아직 자기소개가 등록되지 않았습니다.'}
             </p>
 
-            <dl className="mt-5 grid grid-cols-3 gap-3 text-sm">
+            <dl className="mt-5 grid grid-cols-2 gap-3 text-sm sm:grid-cols-5">
+              <div className="rounded-2xl bg-[#FAF6F1] p-3">
+                <dt className="text-xs font-bold text-[#9B8E82]">평점</dt>
+                <dd className="mt-1 font-bold text-[#2A2622]">
+                  {formatRating(sitter.averageRating)}
+                </dd>
+              </div>
+              <div className="rounded-2xl bg-[#FAF6F1] p-3">
+                <dt className="text-xs font-bold text-[#9B8E82]">리뷰</dt>
+                <dd className="mt-1 font-bold text-[#2A2622]">
+                  {(sitter.reviewCount ?? 0).toLocaleString()}개
+                </dd>
+              </div>
               <div className="rounded-2xl bg-[#FAF6F1] p-3">
                 <dt className="text-xs font-bold text-[#9B8E82]">동물</dt>
                 <dd className="mt-1 font-bold text-[#2A2622]">

@@ -39,6 +39,12 @@ const formatDateTime = (value?: string) => {
   }).format(new Date(value));
 };
 
+const formatRating = (value?: number | string | null) => {
+  if (value === undefined || value === null) return '0.0';
+
+  return Number(value).toFixed(1);
+};
+
 const isReviewSummaryNotFound = (code?: string) =>
   code === 'REVIEW_SUMMARY_NOT_FOUND' || code === 'AI_REVIEW_SUMMARY_NOT_FOUND';
 
@@ -262,7 +268,19 @@ function SitterDetailPage() {
             </div>
           </div>
 
-          <dl className="mt-7 grid gap-3 sm:grid-cols-4">
+          <dl className="mt-7 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <div className="rounded-2xl bg-[#FAF6F1] p-4">
+              <dt className="text-xs font-bold text-[#9B8E82]">평점</dt>
+              <dd className="mt-2 text-lg font-bold text-[#2A2622]">
+                {formatRating(sitter.averageRating)}
+              </dd>
+            </div>
+            <div className="rounded-2xl bg-[#FAF6F1] p-4">
+              <dt className="text-xs font-bold text-[#9B8E82]">리뷰</dt>
+              <dd className="mt-2 text-lg font-bold text-[#2A2622]">
+                {(sitter.reviewCount ?? 0).toLocaleString()}개
+              </dd>
+            </div>
             <div className="rounded-2xl bg-[#FAF6F1] p-4">
               <dt className="text-xs font-bold text-[#9B8E82]">승인 상태</dt>
               <dd className="mt-2 text-lg font-bold text-[#2A2622]">

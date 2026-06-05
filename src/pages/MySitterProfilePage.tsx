@@ -49,6 +49,12 @@ const initialScheduleForm: SitterScheduleRequest = {
   endTime: '18:00',
 };
 
+const formatRating = (value?: number | string | null) => {
+  if (value === undefined || value === null) return '0.0';
+
+  return Number(value).toFixed(1);
+};
+
 const inputClassName =
   'w-full rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm text-[#2A2622] outline-none transition placeholder:text-[#B0A59A] focus:border-[#E26B4A] focus:ring-4 focus:ring-[#F7D8CC]';
 
@@ -429,6 +435,18 @@ function MySitterProfilePage() {
                   {profile.pricePerHour.toLocaleString('ko-KR')}원
                 </dd>
               </div>
+              <div className="rounded-2xl bg-[#FAF6F1] p-4">
+                <dt className="text-xs font-bold text-[#9B8E82]">평점</dt>
+                <dd className="mt-1 text-sm font-bold text-[#2A2622]">
+                  {formatRating(profile.averageRating)}
+                </dd>
+              </div>
+              <div className="rounded-2xl bg-[#FAF6F1] p-4">
+                <dt className="text-xs font-bold text-[#9B8E82]">리뷰</dt>
+                <dd className="mt-1 text-sm font-bold text-[#2A2622]">
+                  {(profile.reviewCount ?? 0).toLocaleString('ko-KR')}개
+                </dd>
+              </div>
             </dl>
           </article>
 
@@ -536,6 +554,8 @@ function MySitterProfilePage() {
               ['가능 동물', possiblePetTypeLabels[profile.possiblePetType]],
               ['가능 크기', possiblePetSizeLabels[profile.possiblePetSize]],
               ['시간당 요금', `${profile.pricePerHour.toLocaleString('ko-KR')}원`],
+              ['평점', formatRating(profile.averageRating)],
+              ['리뷰', `${(profile.reviewCount ?? 0).toLocaleString('ko-KR')}개`],
               ['예약 상태', sitterStatusLabels[profile.status]],
             ].map(([label, value]) => (
               <div key={label} className="rounded-2xl bg-[#FAF6F1] p-4">
