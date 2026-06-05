@@ -36,7 +36,24 @@ const initialMessages: ChatMessage[] = [
   },
 ];
 
+const AI_PENDING_NOTICE_DELAY_MS = 7000;
+
 const formatPrice = (value: number) => `${value.toLocaleString('ko-KR')}원`;
+
+const getAiChatErrorMessage = (error?: {
+  status: number;
+  code: string;
+  message: string;
+}) => {
+  if (error?.status === 429) {
+    return '요청이 많아 잠시 후 다시 시도할 수 있어요. 방금 보낸 질문은 잠깐 기다렸다가 다시 확인해 주세요.';
+  }
+
+  return (
+    error?.message ??
+    'AI 응답이 늦어지고 있거나 연결이 불안정합니다. 잠시 후 다시 시도해 주세요.'
+  );
+};
 
 const buildScheduleSummary = (sitter: RecommendedSitter) => {
   if (!sitter.schedules.length) return '등록된 가능 시간이 없습니다.';
@@ -100,10 +117,15 @@ function AiSitterChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [currentRecommendationIndex, setCurrentRecommendationIndex] = useState(0);
   const [areSuggestionsOpen, setAreSuggestionsOpen] = useState(true);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const chatRequestInFlightRef = useRef(false);
+  const pendingNoticeTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(
+    null,
+  );
 
   const latestRecommendedSitters = useMemo(() => {
     const assistantWithRecommendations = [...messages]
@@ -132,6 +154,33 @@ function AiSitterChatPage() {
     setCurrentRecommendationIndex(0);
   }, [latestRecommendedSitters]);
 
+  useEffect(
+    () => () => {
+      if (pendingNoticeTimerRef.current) {
+        window.clearTimeout(pendingNoticeTimerRef.current);
+      }
+    },
+    [],
+  );
+
+  const clearPendingNoticeTimer = () => {
+    if (!pendingNoticeTimerRef.current) return;
+
+    window.clearTimeout(pendingNoticeTimerRef.current);
+    pendingNoticeTimerRef.current = null;
+  };
+
+  const startPendingNotice = () => {
+    clearPendingNoticeTimer();
+    setPendingMessage('AI가 조건에 맞는 시터와 리뷰 요약을 확인하는 중입니다.');
+    pendingNoticeTimerRef.current = window.setTimeout(() => {
+      setPendingMessage(
+        'AI가 더 나은 추천 답변을 위해 정보를 확보 중입니다. 잠시만 기다려주세요.',
+      );
+      pendingNoticeTimerRef.current = null;
+    }, AI_PENDING_NOTICE_DELAY_MS);
+  };
+
   const moveRecommendation = (direction: 'prev' | 'next') => {
     if (!recommendationCount) return;
 
@@ -147,7 +196,7 @@ function AiSitterChatPage() {
   const sendMessage = async (nextMessage: string) => {
     const trimmedMessage = nextMessage.trim();
 
-    if (!trimmedMessage || isSending) return;
+    if (!trimmedMessage || chatRequestInFlightRef.current) return;
 
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -159,34 +208,45 @@ function AiSitterChatPage() {
     setMessage('');
     setErrorMessage('');
     setAreSuggestionsOpen(false);
+    chatRequestInFlightRef.current = true;
     setIsSending(true);
+    startPendingNotice();
 
-    const result = await sendAiChatMessage({ message: trimmedMessage });
+    try {
+      const result = await sendAiChatMessage({ message: trimmedMessage });
 
-    if (result.success) {
-      const recommendedSitters = await enrichRecommendedSittersWithReviewSummaries(
-        result.data.recommendedSitters,
-      );
-      const answer = normalizeAnswerWithReviewSummaries(
-        result.data.answer,
-        recommendedSitters,
-      );
-
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: answer,
+      if (result.success) {
+        const recommendedSitters = await enrichRecommendedSittersWithReviewSummaries(
+          result.data.recommendedSitters,
+        );
+        const answer = normalizeAnswerWithReviewSummaries(
+          result.data.answer,
           recommendedSitters,
-        },
-      ]);
-    } else {
-      setErrorMessage(result.error.message);
-    }
+        );
 
-    setIsSending(false);
-    inputRef.current?.focus();
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: answer,
+            recommendedSitters,
+          },
+        ]);
+      } else {
+        setErrorMessage(getAiChatErrorMessage(result.error));
+      }
+    } catch {
+      setErrorMessage(
+        'AI 응답이 늦어지고 있거나 연결이 불안정합니다. 잠시 후 다시 시도해 주세요.',
+      );
+    } finally {
+      clearPendingNoticeTimer();
+      setPendingMessage('');
+      chatRequestInFlightRef.current = false;
+      setIsSending(false);
+      inputRef.current?.focus();
+    }
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -243,7 +303,7 @@ function AiSitterChatPage() {
 
             {isSending && (
               <div className="inline-flex rounded-2xl bg-[#F6EFE7] px-4 py-3 text-sm font-black text-[#8C8075]">
-                추천 결과와 리뷰 요약을 함께 확인하는 중...
+                {pendingMessage || '추천 결과와 리뷰 요약을 함께 확인하는 중...'}
               </div>
             )}
           </div>

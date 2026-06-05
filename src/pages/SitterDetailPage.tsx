@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   createOrGetChatRoom,
@@ -48,6 +48,21 @@ const formatRating = (value?: number | string | null) => {
 const isReviewSummaryNotFound = (code?: string) =>
   code === 'REVIEW_SUMMARY_NOT_FOUND' || code === 'AI_REVIEW_SUMMARY_NOT_FOUND';
 
+const AI_PENDING_NOTICE_DELAY_MS = 7000;
+
+const getReviewSummaryErrorMessage = (
+  error?: { status: number; code: string; message: string },
+) => {
+  if (
+    error?.status === 429 ||
+    error?.code === 'AI_REVIEW_SUMMARY_RATE_LIMITED'
+  ) {
+    return '요청이 많아 잠시 후 다시 시도할 수 있어요. 이미 요약을 준비 중일 수 있으니 조금 뒤에 확인해 주세요.';
+  }
+
+  return error?.message ?? '리뷰 요약 생성 중 문제가 발생했습니다.';
+};
+
 // 특정 시터의 프로필과 가능 시간을 보여주는 상세 페이지입니다.
 function SitterDetailPage() {
   const navigate = useNavigate();
@@ -63,6 +78,36 @@ function SitterDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [reviewMessage, setReviewMessage] = useState('');
+  const [summaryMessage, setSummaryMessage] = useState('');
+  const summaryRequestInFlightRef = useRef(false);
+  const summaryNoticeTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(
+    null,
+  );
+
+  const clearSummaryNoticeTimer = () => {
+    if (!summaryNoticeTimerRef.current) return;
+
+    window.clearTimeout(summaryNoticeTimerRef.current);
+    summaryNoticeTimerRef.current = null;
+  };
+
+  const startSummaryPendingNotice = (initialMessage: string) => {
+    clearSummaryNoticeTimer();
+    setSummaryMessage(initialMessage);
+    summaryNoticeTimerRef.current = window.setTimeout(() => {
+      setSummaryMessage(
+        'AI가 더 나은 리뷰 요약을 위해 답변을 확보 중입니다. 잠시만 기다려주세요.',
+      );
+      summaryNoticeTimerRef.current = null;
+    }, AI_PENDING_NOTICE_DELAY_MS);
+  };
+
+  useEffect(
+    () => () => {
+      clearSummaryNoticeTimer();
+    },
+    [],
+  );
 
   // URL의 시터 ID로 상세 정보를 조회합니다.
   useEffect(() => {
@@ -115,21 +160,24 @@ function SitterDetailPage() {
           !summaryResult.value.success &&
           isReviewSummaryNotFound(summaryResult.value.error.code)
         ) {
+          summaryRequestInFlightRef.current = true;
           setIsGeneratingSummary(true);
-          setReviewMessage('첫 리뷰 요약을 생성하는 중입니다.');
+          startSummaryPendingNotice('첫 리뷰 요약을 생성하는 중입니다.');
 
           const generateResult = await generateSitterReviewSummary(nextSitterId);
 
           if (generateResult.success) {
             setReviewSummary(generateResult.data);
-            setReviewMessage('');
+            setSummaryMessage('');
           } else {
-            setReviewMessage(generateResult.error.message);
+            setSummaryMessage(getReviewSummaryErrorMessage(generateResult.error));
           }
         }
       } catch {
         setErrorMessage('시터 정보를 불러오지 못했습니다.');
       } finally {
+        clearSummaryNoticeTimer();
+        summaryRequestInFlightRef.current = false;
         setIsGeneratingSummary(false);
         setIsLoading(false);
       }
@@ -164,24 +212,30 @@ function SitterDetailPage() {
   };
 
   const handleGenerateSummary = async () => {
-    if (!sitter || isGeneratingSummary) return;
+    if (!sitter || summaryRequestInFlightRef.current) return;
 
-    setReviewMessage('');
+    summaryRequestInFlightRef.current = true;
+    setSummaryMessage('');
     setIsGeneratingSummary(true);
+    startSummaryPendingNotice('AI가 리뷰를 분석하고 있습니다.');
 
     try {
       const result = await generateSitterReviewSummary(sitter.id);
 
       if (result.success) {
         setReviewSummary(result.data);
-        setReviewMessage('리뷰 요약을 갱신했습니다.');
+        setSummaryMessage('리뷰 요약을 갱신했습니다.');
         return;
       }
 
-      setReviewMessage(result.error.message);
+      setSummaryMessage(getReviewSummaryErrorMessage(result.error));
     } catch {
-      setReviewMessage('리뷰 요약 생성 중 문제가 발생했습니다.');
+      setSummaryMessage(
+        'AI 응답이 늦어지고 있거나 연결이 불안정합니다. 잠시 후 다시 시도해 주세요.',
+      );
     } finally {
+      clearSummaryNoticeTimer();
+      summaryRequestInFlightRef.current = false;
       setIsGeneratingSummary(false);
     }
   };
@@ -432,6 +486,12 @@ function SitterDetailPage() {
                 : reviews.length > 0
                   ? '요약을 불러오지 못했습니다. 잠시 후 다시 갱신해 주세요.'
                   : '리뷰가 쌓이면 시터의 강점과 주의할 점을 요약해 보여드립니다.'}
+            </p>
+          )}
+
+          {summaryMessage && (
+            <p className="mt-4 rounded-2xl bg-[#EEF7EA] px-4 py-3 text-sm font-semibold leading-6 text-[#3F5732]">
+              {summaryMessage}
             </p>
           )}
 
