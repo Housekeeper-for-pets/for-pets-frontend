@@ -9,7 +9,7 @@ import {
   possiblePetTypeLabels,
   sitterStatusLabels,
 } from '../constants/options';
-import type { RecommendedSitter } from '../types';
+import type { RagSearchResult, RecommendedSitter } from '../types';
 
 type ChatRole = 'assistant' | 'user';
 
@@ -18,6 +18,7 @@ interface ChatMessage {
   role: ChatRole;
   content: string;
   recommendedSitters?: RecommendedSitter[];
+  sources?: RagSearchResult[];
 }
 
 const promptSuggestions = [
@@ -39,6 +40,12 @@ const initialMessages: ChatMessage[] = [
 const AI_PENDING_NOTICE_DELAY_MS = 7000;
 
 const formatPrice = (value: number) => `${value.toLocaleString('ko-KR')}원`;
+
+const formatSourceScore = (score: number) => `${Math.round(score * 100)}%`;
+
+const sourceTypeLabels: Record<RagSearchResult['sourceType'], string> = {
+  REVIEW: '보호자 리뷰',
+};
 
 const getAiChatErrorMessage = (error?: {
   status: number;
@@ -138,6 +145,14 @@ function AiSitterChatPage() {
     return assistantWithRecommendations?.recommendedSitters ?? [];
   }, [messages]);
 
+  const latestSources = useMemo(() => {
+    const assistantWithSources = [...messages]
+      .reverse()
+      .find((item) => item.role === 'assistant' && item.sources?.length);
+
+    return assistantWithSources?.sources ?? [];
+  }, [messages]);
+
   const latestUserQuestion = useMemo(
     () => [...messages].reverse().find((item) => item.role === 'user')?.content,
     [messages],
@@ -231,6 +246,7 @@ function AiSitterChatPage() {
             role: 'assistant',
             content: answer,
             recommendedSitters,
+            sources: result.data.sources ?? [],
           },
         ]);
       } else {
@@ -297,7 +313,32 @@ function AiSitterChatPage() {
                     : 'bg-[#F6EFE7] text-[#3B332D]',
                 ].join(' ')}
               >
-                {chatMessage.content}
+                <p>{chatMessage.content}</p>
+
+                {chatMessage.role === 'assistant' &&
+                  Boolean(chatMessage.sources?.length) && (
+                    <div className="mt-3 space-y-2 border-t border-[#E6D8CA] pt-3">
+                      <p className="text-xs font-black text-[#B85B3D]">
+                        참고한 리뷰 근거
+                      </p>
+                      {chatMessage.sources?.slice(0, 3).map((source) => (
+                        <Link
+                          key={`${source.sourceType}-${source.reviewId}-${source.sitterId}`}
+                          to={`/sitters/${source.sitterId}`}
+                          className="block rounded-xl bg-white/65 p-3 text-xs font-bold leading-5 text-[#5E544B] transition hover:bg-white"
+                        >
+                          <span className="block text-[#8C8075]">
+                            {sourceTypeLabels[source.sourceType]} #{source.reviewId} ·
+                            시터 #{source.sitterId} · 평점 {source.rating} · 관련도{' '}
+                            {formatSourceScore(source.score)}
+                          </span>
+                          <span className="mt-1 block line-clamp-2">
+                            {source.snippet}
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
               </article>
             ))}
 
@@ -364,6 +405,11 @@ function AiSitterChatPage() {
               <h2 className="mt-2 text-xl font-black text-[#2A2622]">
                 추천 시터 {recommendationCount}명
               </h2>
+              {latestSources.length > 0 && (
+                <p className="mt-2 text-xs font-bold leading-5 text-[#8C8075]">
+                  실제 리뷰 근거 {latestSources.length}개를 함께 참고했어요.
+                </p>
+              )}
             </div>
 
             {!currentRecommendedSitter ? (
