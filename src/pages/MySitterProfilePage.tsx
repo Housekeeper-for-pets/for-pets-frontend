@@ -715,42 +715,41 @@ function MySitterProfilePage() {
         </form>
 
         <aside className="grid gap-6">
-          <section className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
-            <p className="text-sm font-bold text-[#E26B4A]">STATUS</p>
-            <h2 className="mt-3 text-2xl font-bold text-[#2A2622]">
-              예약 가능 상태
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-[#6F675F]">
-              관리자 승인 후 예약 가능 상태를 변경할 수 있으며, 변경 사항은 시터 검색과 요청 가능 여부에 반영됩니다.
-            </p>
-            {!isApproved && (
-              <p className="mt-3 rounded-2xl bg-[#FFF0EA] px-4 py-3 text-sm leading-6 text-[#B44727]">
-                현재 승인 상태는{' '}
-                {profile?.approvalStatus
-                  ? sitterApprovalStatusLabels[profile.approvalStatus]
-                  : '확인 필요'}
-                입니다.
+          {profile && (
+            <section className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
+              <p className="text-sm font-bold text-[#E26B4A]">STATUS</p>
+              <h2 className="mt-3 text-2xl font-bold text-[#2A2622]">
+                예약 가능 상태
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-[#6F675F]">
+                관리자 승인 후 예약 가능 상태를 변경할 수 있으며, 변경 사항은 시터 검색과 요청 가능 여부에 반영됩니다.
               </p>
-            )}
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                disabled={!profile || !isApproved || profile.status === 'RESERVABLE'}
-                onClick={() => void handleStatusChange('RESERVABLE')}
-                className="rounded-2xl bg-[#E26B4A] px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#D8B6A9]"
-              >
-                예약 가능
-              </button>
-              <button
-                type="button"
-                disabled={!profile || !isApproved || profile.status === 'NON_RESERVABLE'}
-                onClick={() => void handleStatusChange('NON_RESERVABLE')}
-                className="rounded-2xl bg-[#2A2622] px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#B0A59A]"
-              >
-                예약 불가
-              </button>
-            </div>
-          </section>
+              {!isApproved && profile.approvalStatus && (
+                <p className="mt-3 rounded-2xl bg-[#FFF0EA] px-4 py-3 text-sm leading-6 text-[#B44727]">
+                  현재 승인 상태는 {sitterApprovalStatusLabels[profile.approvalStatus]}
+                  입니다.
+                </p>
+              )}
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  disabled={!isApproved || profile.status === 'RESERVABLE'}
+                  onClick={() => void handleStatusChange('RESERVABLE')}
+                  className="rounded-2xl bg-[#E26B4A] px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#D8B6A9]"
+                >
+                  예약 가능
+                </button>
+                <button
+                  type="button"
+                  disabled={!isApproved || profile.status === 'NON_RESERVABLE'}
+                  onClick={() => void handleStatusChange('NON_RESERVABLE')}
+                  className="rounded-2xl bg-[#2A2622] px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#B0A59A]"
+                >
+                  예약 불가
+                </button>
+              </div>
+            </section>
+          )}
 
           <section className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
             <p className="text-sm font-bold text-[#E26B4A]">SUMMARY</p>

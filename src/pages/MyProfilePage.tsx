@@ -6,17 +6,23 @@ import {
   createCoupon,
   deleteMyAccount,
   getMyInfo,
+  getMyPosts,
   issueCoupon,
   revokeUserCoupon,
   updateMyInfo,
 } from '../api';
 import RegionSelect from '../components/RegionSelect';
-import { getRegionLabel } from '../constants/options';
+import {
+  careTypeLabels,
+  getRegionLabel,
+  postStatusLabels,
+} from '../constants/options';
 import type {
   ApiErrorDetail,
   ChangePasswordRequest,
   Member,
   MemberGender,
+  Post,
   Region,
   UpdateMemberRequest,
 } from '../types';
@@ -76,6 +82,10 @@ function MyProfilePage() {
     useState<UpdateMemberRequest>(initialProfileForm);
   const [passwordForm, setPasswordForm] =
     useState<ChangePasswordRequest>(initialPasswordForm);
+  const [myPosts, setMyPosts] = useState<Post[]>([]);
+  const [myPostsTotal, setMyPostsTotal] = useState(0);
+  const [isMyPostsLoading, setIsMyPostsLoading] = useState(true);
+  const [myPostsError, setMyPostsError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -111,6 +121,31 @@ function MyProfilePage() {
     };
 
     void loadMyInfo();
+  }, []);
+
+  useEffect(() => {
+    const loadMyPosts = async () => {
+      setIsMyPostsLoading(true);
+      setMyPostsError('');
+
+      try {
+        const result = await getMyPosts({ page: 0, size: 5 });
+
+        if (result.success) {
+          setMyPosts(result.data.content);
+          setMyPostsTotal(result.data.totalElements);
+          return;
+        }
+
+        setMyPostsError(result.error.message);
+      } catch {
+        setMyPostsError('내 공고 목록을 불러오지 못했습니다.');
+      } finally {
+        setIsMyPostsLoading(false);
+      }
+    };
+
+    void loadMyPosts();
   }, []);
 
   const moveMode = (nextMode: AccountMode) => {
@@ -395,6 +430,88 @@ function MyProfilePage() {
                 {member.role === 'SITTER' ? '내 시터 프로필' : '시터 등록'}
               </Link>
             </div>
+          </article>
+
+          <article className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm md:col-span-2 lg:col-span-2">
+            <div className="flex flex-col justify-between gap-2 md:flex-row md:items-end">
+              <div>
+                <p className="text-sm font-bold text-[#E26B4A]">MY POSTS</p>
+                <h2 className="mt-3 text-2xl font-bold text-[#2A2622]">
+                  내 공고
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-[#6F675F]">
+                  내가 등록한 케어 공고와 들어온 제안을 한 화면에서 관리합니다.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-[#6F675F] shadow-sm">
+                  총 {myPostsTotal}건
+                </span>
+                <Link
+                  to="/posts/new"
+                  className="rounded-full bg-[#E26B4A] px-4 py-2 text-xs font-bold text-white"
+                >
+                  공고 작성
+                </Link>
+              </div>
+            </div>
+
+            {isMyPostsLoading && (
+              <p className="mt-5 rounded-2xl bg-[#FAF6F1] p-4 text-sm text-[#6F675F]">
+                내 공고 목록을 불러오는 중입니다.
+              </p>
+            )}
+
+            {!isMyPostsLoading && myPostsError && (
+              <p className="mt-5 rounded-2xl bg-[#FFF0EA] p-4 text-sm font-medium text-[#B44727]">
+                {myPostsError}
+              </p>
+            )}
+
+            {!isMyPostsLoading && !myPostsError && myPosts.length === 0 && (
+              <p className="mt-5 rounded-2xl bg-[#FAF6F1] p-4 text-sm leading-6 text-[#6F675F]">
+                아직 작성한 공고가 없습니다.
+              </p>
+            )}
+
+            {!isMyPostsLoading && !myPostsError && myPosts.length > 0 && (
+              <ul className="mt-5 grid gap-3">
+                {myPosts.map((post) => (
+                  <li key={post.id}>
+                    <Link
+                      to={`/posts/${post.id}`}
+                      className="flex flex-col justify-between gap-2 rounded-2xl bg-[#FAF6F1] p-4 transition hover:bg-[#F4E9DE] md:flex-row md:items-center"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap gap-2">
+                          <span className="rounded-full bg-[#FFF0EA] px-2 py-0.5 text-xs font-bold text-[#B44727]">
+                            {careTypeLabels[post.careType]}
+                          </span>
+                          <span className="rounded-full bg-[#EEF7EA] px-2 py-0.5 text-xs font-bold text-[#3F5732]">
+                            {postStatusLabels[post.status]}
+                          </span>
+                        </div>
+                        <p className="mt-2 truncate text-sm font-bold text-[#2A2622]">
+                          {post.title}
+                        </p>
+                      </div>
+                      <p className="shrink-0 text-sm font-bold text-[#2A2622]">
+                        {post.budgetAmount.toLocaleString('ko-KR')}원
+                      </p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {!isMyPostsLoading && !myPostsError && myPostsTotal > myPosts.length && (
+              <Link
+                to="/posts"
+                className="mt-4 inline-flex w-fit rounded-full border border-[#E7DCD1] px-4 py-2 text-xs font-bold text-[#6F675F]"
+              >
+                내 공고 전체 보기
+              </Link>
+            )}
           </article>
 
           <article className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">

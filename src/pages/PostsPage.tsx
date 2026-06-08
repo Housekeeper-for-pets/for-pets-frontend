@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getMyPosts, searchPosts } from '../api';
+import Pagination from '../components/Pagination';
 import RegionSelect from '../components/RegionSelect';
 import {
   careTypeLabels,
@@ -30,9 +31,9 @@ const postSortOptions = [
 ] as const;
 
 // 빈 검색 조건은 쿼리 파라미터에서 제외합니다.
-const buildQuery = (query: PostSearchQuery): PostSearchQuery => {
+const buildQuery = (query: PostSearchQuery, page = 0): PostSearchQuery => {
   const nextQuery: PostSearchQuery = {
-    page: 0,
+    page,
     size: query.size,
     sort: query.sort,
   };
@@ -56,6 +57,8 @@ function PostsPage() {
   }));
   const [posts, setPosts] = useState<Post[]>([]);
   const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -63,6 +66,7 @@ function PostsPage() {
   const fetchPosts = async (
     nextQuery: PostSearchQuery,
     nextViewMode = viewMode,
+    page = 0,
   ) => {
     setIsLoading(true);
     setErrorMessage('');
@@ -71,15 +75,17 @@ function PostsPage() {
       const result =
         nextViewMode === 'mine'
           ? await getMyPosts({
-              page: 0,
+              page,
               size: nextQuery.size,
               status: nextQuery.status,
             })
-          : await searchPosts(buildQuery(nextQuery));
+          : await searchPosts(buildQuery(nextQuery, page));
 
       if (result.success) {
         setPosts(result.data.content);
         setTotalElements(result.data.totalElements);
+        setTotalPages(result.data.totalPages);
+        setCurrentPage(result.data.currentPage);
         return;
       }
 
@@ -98,7 +104,7 @@ function PostsPage() {
     };
     const timerId = window.setTimeout(() => {
       setQuery(nextQuery);
-      void fetchPosts(nextQuery);
+      void fetchPosts(nextQuery, viewMode, 0);
     }, 0);
 
     return () => window.clearTimeout(timerId);
@@ -107,12 +113,19 @@ function PostsPage() {
   // 검색 폼 제출 시 첫 페이지 기준으로 공고 목록을 다시 조회합니다.
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    void fetchPosts(query);
+    void fetchPosts(query, viewMode, 0);
   };
 
   const handleViewModeChange = (nextViewMode: 'all' | 'mine') => {
     setViewMode(nextViewMode);
-    void fetchPosts(query, nextViewMode);
+    void fetchPosts(query, nextViewMode, 0);
+  };
+
+  const handlePageChange = (page: number) => {
+    void fetchPosts(query, viewMode, page);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   return (
@@ -312,6 +325,12 @@ function PostsPage() {
           </article>
         ))}
       </section>
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onChange={handlePageChange}
+      />
     </main>
   );
 }

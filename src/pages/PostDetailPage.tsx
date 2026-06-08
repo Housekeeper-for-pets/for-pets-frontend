@@ -307,6 +307,14 @@ function PostDetailPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-8">
+      <div className="mb-5">
+        <Link
+          to="/posts"
+          className="inline-flex items-center rounded-full border border-[#E7DCD1] bg-white px-4 py-2 text-sm font-bold text-[#6F675F]"
+        >
+          ← 공고 목록으로
+        </Link>
+      </div>
       <section className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="rounded-2xl border border-[#E7DCD1] bg-white p-7 shadow-sm">
           <div className="flex flex-wrap gap-2">
@@ -473,12 +481,9 @@ function PostDetailPage() {
                 포함된 반려동물
               </h2>
             </div>
-            <Link
-              to="/posts"
-              className="rounded-full border border-[#E7DCD1] px-4 py-2 text-sm font-bold text-[#6F675F]"
-            >
-              목록으로
-            </Link>
+            <p className="text-sm font-semibold text-[#6F675F]">
+              {post.pets.length}마리
+            </p>
           </div>
 
           <div className="mt-5 grid gap-3">
@@ -524,6 +529,7 @@ function PostDetailPage() {
         </div>
       </section>
 
+      {isOwner && (
       <section className="mt-6 rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
         <div className="flex items-end justify-between gap-4">
           <div>
@@ -592,6 +598,7 @@ function PostDetailPage() {
           ))}
         </div>
       </section>
+      )}
     </main>
   );
 }

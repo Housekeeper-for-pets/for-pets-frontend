@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { searchSitters } from '../api';
+import Pagination from '../components/Pagination';
 import RegionSelect from '../components/RegionSelect';
 import {
   getRegionLabel,
@@ -26,13 +27,11 @@ const initialQuery: SitterSearchQuery = {
 };
 
 const possiblePetTypeOptions: Array<{ value: PossiblePetType; label: string }> = [
-  { value: 'ALL', label: '모두' },
   { value: 'DOG', label: '강아지' },
   { value: 'CAT', label: '고양이' },
 ];
 
 const possiblePetSizeOptions: Array<{ value: PossiblePetSize; label: string }> = [
-  { value: 'ALL', label: '모든 크기' },
   { value: 'SMALL', label: '소형' },
   { value: 'MEDIUM', label: '중형' },
   { value: 'LARGE', label: '대형' },
@@ -45,9 +44,9 @@ const inputClassName =
   'w-full rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm text-[#2A2622] outline-none transition placeholder:text-[#B0A59A] focus:border-[#E26B4A] focus:ring-4 focus:ring-[#F7D8CC]';
 
 // 빈 문자열은 쿼리 파라미터에서 제외해 백엔드 기본 검색 조건을 사용하게 합니다.
-const buildQuery = (query: SitterSearchQuery): SitterSearchQuery => {
+const buildQuery = (query: SitterSearchQuery, page = 0): SitterSearchQuery => {
   const nextQuery: SitterSearchQuery = {
-    page: 0,
+    page,
     size: query.size,
     sort: query.sort,
     direction: query.direction,
@@ -73,20 +72,24 @@ function SittersPage() {
   const [query, setQuery] = useState<SitterSearchQuery>(initialQuery);
   const [sitters, setSitters] = useState<SitterProfile[]>([]);
   const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
   // 현재 검색 조건으로 시터 목록을 조회합니다.
-  const fetchSitters = async (nextQuery: SitterSearchQuery) => {
+  const fetchSitters = async (nextQuery: SitterSearchQuery, page = 0) => {
     setIsLoading(true);
     setErrorMessage('');
 
     try {
-      const result = await searchSitters(buildQuery(nextQuery));
+      const result = await searchSitters(buildQuery(nextQuery, page));
 
       if (result.success) {
         setSitters(result.data.content);
         setTotalElements(result.data.totalElements);
+        setTotalPages(result.data.totalPages);
+        setCurrentPage(result.data.currentPage);
         return;
       }
 
@@ -100,7 +103,7 @@ function SittersPage() {
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
-      void fetchSitters(initialQuery);
+      void fetchSitters(initialQuery, 0);
     }, 0);
 
     return () => window.clearTimeout(timerId);
@@ -109,7 +112,14 @@ function SittersPage() {
   // 검색 폼을 제출하면 첫 페이지 기준으로 목록을 다시 조회합니다.
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    void fetchSitters(query);
+    void fetchSitters(query, 0);
+  };
+
+  const handlePageChange = (page: number) => {
+    void fetchSitters(query, page);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   return (
@@ -158,7 +168,7 @@ function SittersPage() {
             }))
           }
         >
-          <option value="">동물 전체</option>
+          <option value="">전체 동물</option>
           {possiblePetTypeOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
@@ -209,7 +219,7 @@ function SittersPage() {
             }))
           }
         >
-          <option value="">크기 전체</option>
+          <option value="">전체 크기</option>
           {possiblePetSizeOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
@@ -337,6 +347,12 @@ function SittersPage() {
           </article>
         ))}
       </section>
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onChange={handlePageChange}
+      />
     </main>
   );
 }

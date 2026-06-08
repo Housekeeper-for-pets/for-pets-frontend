@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   acceptCareRequest,
   cancelSentCareRequest,
@@ -49,6 +49,8 @@ function MyActivityPage() {
   const [sentRequests, setSentRequests] = useState<CareRequest[]>([]);
   const [receivedRequests, setReceivedRequests] = useState<CareRequest[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [receivedError, setReceivedError] = useState('');
+  const [proposalsError, setProposalsError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [actionKey, setActionKey] = useState('');
   const [message, setMessage] = useState('');
@@ -58,6 +60,8 @@ function MyActivityPage() {
     setIsLoading(true);
     setMessage('');
     setErrorMessage('');
+    setReceivedError('');
+    setProposalsError('');
 
     try {
       const [sentResult, receivedResult, proposalsResult] = await Promise.all([
@@ -66,24 +70,25 @@ function MyActivityPage() {
         getMyProposals(),
       ]);
 
-      if (!sentResult.success) {
+      if (sentResult.success) {
+        setSentRequests(sentResult.data);
+      } else {
         setErrorMessage(sentResult.error.message);
-        return;
       }
 
-      if (!receivedResult.success) {
-        setErrorMessage(receivedResult.error.message);
-        return;
+      // 시터가 아닌 경우 받은 요청과 내 제안 API가 forbidden을 반환합니다.
+      // 요약 화면은 계속 보여주고, 탭 진입 시 에러를 표시합니다.
+      if (receivedResult.success) {
+        setReceivedRequests(receivedResult.data);
+      } else {
+        setReceivedError(receivedResult.error.message);
       }
 
-      if (!proposalsResult.success) {
-        setErrorMessage(proposalsResult.error.message);
-        return;
+      if (proposalsResult.success) {
+        setProposals(proposalsResult.data);
+      } else {
+        setProposalsError(proposalsResult.error.message);
       }
-
-      setSentRequests(sentResult.data);
-      setReceivedRequests(receivedResult.data);
-      setProposals(proposalsResult.data);
     } catch {
       setErrorMessage('요청과 제안 목록을 불러오지 못했습니다.');
     } finally {
@@ -211,14 +216,24 @@ function MyActivityPage() {
           <ActivitySummaryCard
             title="받은 돌봄 요청"
             count={receivedRequests.length}
-            description="시터로서 받은 요청을 수락하거나 거절합니다."
+            description={
+              receivedError
+                ? '시터 등록 후 받은 요청을 확인할 수 있습니다.'
+                : '시터로서 받은 요청을 수락하거나 거절합니다.'
+            }
             onClick={() => setSearchParams({ tab: 'received' })}
+            unavailable={Boolean(receivedError)}
           />
           <ActivitySummaryCard
             title="내 제안"
             count={proposals.length}
-            description="공고에 보낸 제안과 상태를 확인합니다."
+            description={
+              proposalsError
+                ? '시터 등록 후 공고에 보낸 제안을 확인할 수 있습니다.'
+                : '공고에 보낸 제안과 상태를 확인합니다.'
+            }
             onClick={() => setSearchParams({ tab: 'proposals' })}
+            unavailable={Boolean(proposalsError)}
           />
         </section>
       ) : (
@@ -264,7 +279,12 @@ function MyActivityPage() {
 
           {selectedTab === 'received' && (
             <ActivitySection title="받은 돌봄 요청" count={receivedRequests.length}>
-              {receivedRequests.length === 0 && (
+              {receivedError && (
+                <EmptyMessage
+                  text={`${receivedError} 시터 등록 후 다시 확인해 주세요.`}
+                />
+              )}
+              {!receivedError && receivedRequests.length === 0 && (
                 <EmptyMessage text="받은 돌봄 요청이 없습니다." />
               )}
               {receivedRequests.map((request) => (
@@ -314,7 +334,12 @@ function MyActivityPage() {
 
           {selectedTab === 'proposals' && (
             <ActivitySection title="내 제안" count={proposals.length}>
-              {proposals.length === 0 && (
+              {proposalsError && (
+                <EmptyMessage
+                  text={`${proposalsError} 시터 등록 후 다시 확인해 주세요.`}
+                />
+              )}
+              {!proposalsError && proposals.length === 0 && (
                 <EmptyMessage text="등록한 제안이 없습니다." />
               )}
               {proposals.map((proposal) => (
@@ -355,6 +380,7 @@ interface ActivitySummaryCardProps {
   count: number;
   description: string;
   onClick: () => void;
+  unavailable?: boolean;
 }
 
 function ActivitySummaryCard({
@@ -362,15 +388,23 @@ function ActivitySummaryCard({
   count,
   description,
   onClick,
+  unavailable = false,
 }: ActivitySummaryCardProps) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="rounded-2xl border border-[#E7DCD1] bg-white p-5 text-left shadow-sm transition hover:border-[#E26B4A]"
+      className={[
+        'rounded-2xl border bg-white p-5 text-left shadow-sm transition',
+        unavailable
+          ? 'border-[#E7DCD1] opacity-70 hover:border-[#E26B4A]'
+          : 'border-[#E7DCD1] hover:border-[#E26B4A]',
+      ].join(' ')}
     >
       <p className="text-sm font-bold text-[#E26B4A]">{title}</p>
-      <p className="mt-4 text-3xl font-black text-[#2A2622]">{count}건</p>
+      <p className="mt-4 text-3xl font-black text-[#2A2622]">
+        {unavailable ? '-' : `${count}건`}
+      </p>
       <p className="mt-3 text-sm leading-6 text-[#6F675F]">{description}</p>
     </button>
   );
@@ -426,7 +460,15 @@ function CareRequestCard({ request, actionArea }: CareRequestCardProps) {
             보호자 {request.memberId} · 시터 {request.sitterProfileId}
           </p>
         </div>
-        {actionArea}
+        <div className="flex shrink-0 flex-wrap items-start gap-2">
+          {actionArea}
+          <Link
+            to={`/sitters/${request.sitterProfileId}`}
+            className="rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm font-bold text-[#6F675F]"
+          >
+            시터 프로필 보기
+          </Link>
+        </div>
       </div>
 
       <p className="mt-4 text-sm leading-6 text-[#6F675F]">
@@ -475,7 +517,15 @@ function ProposalCard({ proposal, actionArea }: ProposalCardProps) {
             시터 프로필 {proposal.sitterProfileId} · 제안자 {proposal.memberId}
           </p>
         </div>
-        {actionArea}
+        <div className="flex shrink-0 flex-wrap items-start gap-2">
+          {actionArea}
+          <Link
+            to={`/posts/${proposal.postId}`}
+            className="rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm font-bold text-[#6F675F]"
+          >
+            공고 상세 보기
+          </Link>
+        </div>
       </div>
 
       <p className="mt-4 text-xl font-bold text-[#2A2622]">

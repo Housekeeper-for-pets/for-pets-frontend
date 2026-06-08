@@ -14,7 +14,6 @@ const initialQuery: ReservationSearchQuery = {
   page: 0,
   size: 10,
   sort: 'createdAt',
-  status: 'PENDING',
 };
 
 const selectClassName =

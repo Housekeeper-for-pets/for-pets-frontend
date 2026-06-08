@@ -20,17 +20,50 @@ const getIsRead = (notification: Notification) =>
   notification.isRead ?? notification.read ?? false;
 
 const getReferencePath = (notification: Notification) => {
-  if (!notification.referenceId) return null;
+  // referenceType과 referenceId가 있으면 우선 사용합니다.
+  if (notification.referenceId) {
+    switch (notification.referenceType?.toUpperCase()) {
+      case 'RESERVATION':
+        return `/reservations/${notification.referenceId}`;
+      case 'POST':
+        return `/posts/${notification.referenceId}`;
+      case 'SITTER':
+      case 'SITTER_PROFILE':
+        return `/sitters/${notification.referenceId}`;
+      case 'PROPOSAL':
+        return '/activity?tab=proposals';
+      case 'REQUEST':
+      case 'CARE_REQUEST':
+        return '/activity?tab=received';
+      case 'PAYMENT':
+        return '/payments';
+      default:
+        break;
+    }
+  }
 
-  switch (notification.referenceType?.toUpperCase()) {
-    case 'RESERVATION':
-      return `/reservations/${notification.referenceId}`;
-    case 'POST':
-      return `/posts/${notification.referenceId}`;
-    case 'PROPOSAL':
-      return `/activity`;
-    case 'PAYMENT':
-      return `/payments`;
+  // referenceType이 없거나 매칭되지 않을 때는 알림 종류 기준으로 분기합니다.
+  switch (notification.type) {
+    case 'REQUEST_RECEIVED':
+      return '/activity?tab=received';
+    case 'PROPOSAL_ARRIVED':
+      // 공고 작성자가 받은 제안 알림 — 공고에 들어온 제안 확인용 공고 상세 화면 권장.
+      return notification.referenceType?.toUpperCase() === 'POST' &&
+        notification.referenceId
+        ? `/posts/${notification.referenceId}`
+        : '/posts';
+    case 'PROPOSAL_WITHDRAWN':
+      return '/activity?tab=proposals';
+    case 'MATCHING_CONFIRMED':
+      return notification.referenceId
+        ? `/reservations/${notification.referenceId}`
+        : '/reservations';
+    case 'PAYMENT_COMPLETED':
+      return '/payments';
+    case 'CARE_LOG':
+      return notification.referenceId
+        ? `/reservations/${notification.referenceId}`
+        : '/reservations';
     default:
       return null;
   }
