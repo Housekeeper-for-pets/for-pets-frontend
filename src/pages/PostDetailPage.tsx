@@ -17,6 +17,7 @@ import {
   getRegionLabel,
   postStatusLabels,
 } from '../constants/options';
+import { useAuth } from '../hooks/useAuth';
 import type { Member, Post, Proposal, ProposalRequest } from '../types';
 
 const initialProposalForm: ProposalRequest = {
@@ -37,6 +38,7 @@ const proposalStatusLabels = {
 // 공고 상세를 보여주고 시터가 제안을 등록할 수 있는 페이지입니다.
 function PostDetailPage() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const { postId } = useParams<{ postId: string }>();
   const [post, setPost] = useState<Post | null>(null);
   const [currentMember, setCurrentMember] = useState<Member | null>(null);
@@ -80,7 +82,8 @@ function PostDetailPage() {
     };
 
     const fetchProposals = async () => {
-      if (!postId) {
+      if (!postId || !isAuthenticated) {
+        setIsLoadingProposals(false);
         return;
       }
 
@@ -99,6 +102,10 @@ function PostDetailPage() {
     };
 
     const fetchCurrentMember = async () => {
+      if (!isAuthenticated) {
+        return;
+      }
+
       try {
         const result = await getMyInfo();
 
@@ -113,14 +120,14 @@ function PostDetailPage() {
     void fetchPostDetail();
     void fetchProposals();
     void fetchCurrentMember();
-  }, [postId]);
+  }, [postId, isAuthenticated]);
 
   const isOwner = Boolean(post && currentMember?.id === post.memberId);
 
   // 제안 등록 전 필수 입력값을 확인합니다.
   const validateProposal = () => {
-    if (proposalForm.proposedPrice <= 0) {
-      return '제안 금액은 0보다 커야 합니다.';
+    if (proposalForm.proposedPrice < 5000) {
+      return '제안 금액은 5,000원 이상이어야 합니다.';
     }
 
     return '';
@@ -369,7 +376,19 @@ function PostDetailPage() {
               : '가능한 공고라면 제안 금액과 메시지를 보내 보호자에게 지원할 수 있습니다.'}
           </p>
 
-          {isOwner && (
+          {!isAuthenticated && (
+            <div className="mt-5 rounded-2xl bg-[#FAF6F1] p-5 text-sm leading-6 text-[#6F675F]">
+              <p>제안 등록과 채팅은 로그인 후 이용할 수 있습니다.</p>
+              <Link
+                to="/login"
+                className="mt-4 inline-flex w-full justify-center rounded-2xl bg-[#E26B4A] px-4 py-3 text-sm font-bold text-white"
+              >
+                로그인하러 가기
+              </Link>
+            </div>
+          )}
+
+          {isAuthenticated && isOwner && (
             <div className="mt-5 grid gap-3">
               <Link
                 to={`/posts/${post.id}/edit`}
@@ -395,15 +414,15 @@ function PostDetailPage() {
             </div>
           )}
 
-          {!isOwner && (
+          {isAuthenticated && !isOwner && (
           <form className="mt-5 space-y-4" onSubmit={handleProposalSubmit}>
             <label className="block" htmlFor="proposedPrice">
-              <span className="text-sm font-bold text-[#2A2622]">제안 금액</span>
+              <span className="text-sm font-bold text-[#2A2622]">제안 금액 (최소 5,000원)</span>
               <input
                 id="proposedPrice"
                 className={`mt-2 ${inputClassName}`}
                 type="number"
-                min={1}
+                min={5000}
                 value={proposalForm.proposedPrice}
                 onChange={(event) =>
                   setProposalForm((prevForm) => ({

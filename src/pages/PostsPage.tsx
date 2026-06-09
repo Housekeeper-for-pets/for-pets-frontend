@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { getMyPosts, searchPosts } from '../api';
 import Pagination from '../components/Pagination';
 import RegionSelect from '../components/RegionSelect';
+import { useAuth } from '../hooks/useAuth';
 import {
   careTypeLabels,
   getRegionLabel,
@@ -48,6 +49,7 @@ const buildQuery = (query: PostSearchQuery, page = 0): PostSearchQuery => {
 
 // 공고 목록을 검색하고 열린 공고를 확인하는 페이지입니다.
 function PostsPage() {
+  const { isAuthenticated } = useAuth();
   const [searchParams] = useSearchParams();
   const keywordFromUrl = searchParams.get('keyword') ?? undefined;
   const [viewMode, setViewMode] = useState<'all' | 'mine'>('all');
@@ -143,19 +145,30 @@ function PostsPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => handleViewModeChange(viewMode === 'mine' ? 'all' : 'mine')}
-            className="w-fit rounded-full border border-[#E7DCD1] px-5 py-3 text-sm font-bold text-[#6F675F]"
-          >
-            {viewMode === 'mine' ? '전체 공고' : '내 공고'}
-          </button>
-          <Link
-            to="/posts/new"
-            className="w-fit rounded-full bg-[#E26B4A] px-5 py-3 text-sm font-bold text-white"
-          >
-            공고 작성
-          </Link>
+          {isAuthenticated && (
+            <button
+              type="button"
+              onClick={() => handleViewModeChange(viewMode === 'mine' ? 'all' : 'mine')}
+              className="w-fit rounded-full border border-[#E7DCD1] px-5 py-3 text-sm font-bold text-[#6F675F]"
+            >
+              {viewMode === 'mine' ? '전체 공고' : '내 공고'}
+            </button>
+          )}
+          {isAuthenticated ? (
+            <Link
+              to="/posts/new"
+              className="w-fit rounded-full bg-[#E26B4A] px-5 py-3 text-sm font-bold text-white"
+            >
+              공고 작성
+            </Link>
+          ) : (
+            <Link
+              to="/login"
+              className="w-fit rounded-full bg-[#E26B4A] px-5 py-3 text-sm font-bold text-white"
+            >
+              로그인하고 공고 작성
+            </Link>
+          )}
         </div>
       </section>
 

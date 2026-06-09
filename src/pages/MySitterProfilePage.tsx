@@ -182,8 +182,8 @@ function MySitterProfilePage() {
       return '경력 연수는 0 이상이어야 합니다.';
     }
 
-    if (profileForm.pricePerHour <= 0) {
-      return '시간당 요금은 0보다 커야 합니다.';
+    if (profileForm.pricePerHour < 5000) {
+      return '시간당 요금은 5,000원 이상이어야 합니다.';
     }
 
     return '';
@@ -643,12 +643,12 @@ function MySitterProfilePage() {
               </label>
 
               <label className="block" htmlFor="pricePerHour">
-                <span className="text-sm font-bold text-[#2A2622]">시간당 요금</span>
+                <span className="text-sm font-bold text-[#2A2622]">시간당 요금 (최소 5,000원)</span>
                 <input
                   id="pricePerHour"
                   className={`mt-2 ${inputClassName}`}
                   type="number"
-                  min={1}
+                  min={5000}
                   value={profileForm.pricePerHour}
                   onChange={(event) =>
                     setProfileForm((prevForm) => ({

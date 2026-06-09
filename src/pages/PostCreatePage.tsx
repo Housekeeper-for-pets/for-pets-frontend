@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { createPost, getMyPets, getPost, updatePost } from '../api';
+import { createPost, getMyInfo, getMyPets, getPost, updatePost } from '../api';
 import { careTypeLabels } from '../constants/options';
 import type { CareType, Pet, PostRequest, TimeSlotRequest } from '../types';
 
@@ -34,6 +34,7 @@ function PostCreatePage() {
   const [isLoadingPost, setIsLoadingPost] = useState(isEditMode);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [forbiddenMessage, setForbiddenMessage] = useState('');
 
   // 공고에 포함할 내 반려동물 목록을 조회합니다.
   useEffect(() => {
@@ -63,27 +64,39 @@ function PostCreatePage() {
 
     const fetchPost = async () => {
       try {
-        const result = await getPost(Number(postId));
+        const [postResult, memberResult] = await Promise.all([
+          getPost(Number(postId)),
+          getMyInfo(),
+        ]);
 
-        if (result.success) {
-          setForm({
-            title: result.data.title,
-            content: result.data.content,
-            petIds: result.data.pets
-              .map((pet) => pet.petId ?? pet.id)
-              .filter((petId): petId is number => typeof petId === 'number'),
-            careType: result.data.careType,
-            budgetAmount: result.data.budgetAmount,
-            timeSlots: result.data.timeSlots.map((timeSlot) => ({
-              careDate: timeSlot.careDate,
-              startTime: timeSlot.startTime,
-              endTime: timeSlot.endTime,
-            })),
-          });
+        if (!postResult.success) {
+          setErrorMessage(postResult.error.message);
           return;
         }
 
-        setErrorMessage(result.error.message);
+        // 작성자가 아닌 사용자는 수정 화면에 접근할 수 없습니다.
+        if (
+          memberResult.success &&
+          memberResult.data.id !== postResult.data.memberId
+        ) {
+          setForbiddenMessage('작성자만 공고를 수정할 수 있습니다.');
+          return;
+        }
+
+        setForm({
+          title: postResult.data.title,
+          content: postResult.data.content,
+          petIds: postResult.data.pets
+            .map((pet) => pet.petId ?? pet.id)
+            .filter((petId): petId is number => typeof petId === 'number'),
+          careType: postResult.data.careType,
+          budgetAmount: postResult.data.budgetAmount,
+          timeSlots: postResult.data.timeSlots.map((timeSlot) => ({
+            careDate: timeSlot.careDate,
+            startTime: timeSlot.startTime,
+            endTime: timeSlot.endTime,
+          })),
+        });
       } catch {
         setErrorMessage('공고 정보를 불러오지 못했습니다.');
       } finally {
@@ -152,7 +165,7 @@ function PostCreatePage() {
     if (!form.title.trim()) return '공고 제목을 입력해 주세요.';
     if (!form.content.trim()) return '공고 내용을 입력해 주세요.';
     if (form.petIds.length === 0) return '반려동물을 1마리 이상 선택해 주세요.';
-    if (form.budgetAmount <= 0) return '희망 예산은 0보다 커야 합니다.';
+    if (form.budgetAmount < 5000) return '희망 예산은 5,000원 이상이어야 합니다.';
 
     const hasEmptyTimeSlot = form.timeSlots.some(
       (timeSlot) => !timeSlot.careDate || !timeSlot.startTime || !timeSlot.endTime,
@@ -210,6 +223,34 @@ function PostCreatePage() {
     );
   }
 
+  if (forbiddenMessage) {
+    return (
+      <main className="mx-auto max-w-5xl px-6 py-8">
+        <div className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
+          <p className="text-sm font-bold text-[#E26B4A]">FORBIDDEN</p>
+          <h1 className="mt-3 text-2xl font-bold text-[#2A2622]">
+            접근 권한이 없습니다.
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-[#6F675F]">{forbiddenMessage}</p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Link
+              to={postId ? `/posts/${postId}` : '/posts'}
+              className="rounded-2xl bg-[#2A2622] px-4 py-3 text-sm font-bold text-white"
+            >
+              공고 상세로
+            </Link>
+            <Link
+              to="/posts"
+              className="rounded-2xl border border-[#E7DCD1] px-4 py-3 text-sm font-bold text-[#6F675F]"
+            >
+              공고 목록으로
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto max-w-5xl px-6 py-8">
       <section className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
@@ -249,12 +290,12 @@ function PostCreatePage() {
             </label>
 
             <label className="block" htmlFor="budgetAmount">
-              <span className="text-sm font-bold text-[#2A2622]">희망 예산</span>
+              <span className="text-sm font-bold text-[#2A2622]">희망 예산 (최소 5,000원)</span>
               <input
                 id="budgetAmount"
                 className={`mt-3 ${inputClassName}`}
                 type="number"
-                min={1}
+                min={5000}
                 value={form.budgetAmount}
                 onChange={(event) =>
                   setForm((prevForm) => ({

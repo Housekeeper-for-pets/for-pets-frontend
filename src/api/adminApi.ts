@@ -1,15 +1,26 @@
 import { axiosInstance } from './axiosInstance';
 import type {
+  AdminSitterDetail,
   AdminSitterProfile,
   ApiResponse,
   Id,
+  PageResponse,
   RejectSitterRequest,
   Reservation,
 } from '../types';
 
-export const getPendingAdminSitters = async () => {
-  const response = await axiosInstance.get<ApiResponse<AdminSitterProfile[]>>(
+export const getPendingAdminSitters = async (page = 0, size = 50) => {
+  const response = await axiosInstance.get<ApiResponse<PageResponse<AdminSitterProfile>>>(
     '/admin/sitters',
+    { params: { page, size } },
+  );
+
+  return response.data;
+};
+
+export const getAdminSitterDetail = async (sitterProfileId: Id) => {
+  const response = await axiosInstance.get<ApiResponse<AdminSitterDetail>>(
+    `/admin/sitters/${sitterProfileId}`,
   );
 
   return response.data;
@@ -35,9 +46,10 @@ export const rejectAdminSitter = async (
   return response.data;
 };
 
-export const getAdminReservationCancelRequests = async () => {
-  const response = await axiosInstance.get<ApiResponse<Reservation[]>>(
+export const getAdminReservationCancelRequests = async (page = 0, size = 50) => {
+  const response = await axiosInstance.get<ApiResponse<PageResponse<Reservation>>>(
     '/admin/reservations/cancel-requests',
+    { params: { page, size } },
   );
 
   return response.data;

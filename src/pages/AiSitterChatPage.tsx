@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { getSitterReviewSummary, sendAiChatMessage } from '../api';
+import { getSitterReviewSummary, streamAiChatMessage } from '../api';
 import {
   dayOfWeekLabels,
   getRegionLabel,
@@ -45,21 +45,6 @@ const formatSourceScore = (score: number) => `${Math.round(score * 100)}%`;
 
 const sourceTypeLabels: Record<RagSearchResult['sourceType'], string> = {
   REVIEW: '보호자 리뷰',
-};
-
-const getAiChatErrorMessage = (error?: {
-  status: number;
-  code: string;
-  message: string;
-}) => {
-  if (error?.status === 429) {
-    return '요청이 많아 잠시 후 다시 시도할 수 있어요. 방금 보낸 질문은 잠깐 기다렸다가 다시 확인해 주세요.';
-  }
-
-  return (
-    error?.message ??
-    'AI 응답이 늦어지고 있거나 연결이 불안정합니다. 잠시 후 다시 시도해 주세요.'
-  );
 };
 
 const buildScheduleSummary = (sitter: RecommendedSitter) => {
@@ -123,6 +108,7 @@ const normalizeAnswerWithReviewSummaries = (
 function AiSitterChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [message, setMessage] = useState('');
+  const [chatSessionId, setChatSessionId] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [pendingMessage, setPendingMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -218,6 +204,33 @@ function AiSitterChatPage() {
       role: 'user',
       content: trimmedMessage,
     };
+    const assistantMessageId = `assistant-${Date.now()}`;
+
+    const upsertAssistantMessage = (nextMessage: Partial<ChatMessage>) => {
+      setMessages((prevMessages) => {
+        const existingMessage = prevMessages.find(
+          (item) => item.id === assistantMessageId,
+        );
+
+        if (existingMessage) {
+          return prevMessages.map((item) =>
+            item.id === assistantMessageId ? { ...item, ...nextMessage } : item,
+          );
+        }
+
+        return [
+          ...prevMessages,
+          {
+            id: assistantMessageId,
+            role: 'assistant',
+            content: '',
+            recommendedSitters: [],
+            sources: [],
+            ...nextMessage,
+          },
+        ];
+      });
+    };
 
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setMessage('');
@@ -228,34 +241,84 @@ function AiSitterChatPage() {
     startPendingNotice();
 
     try {
-      const result = await sendAiChatMessage({ message: trimmedMessage });
-
-      if (result.success) {
-        const recommendedSitters = await enrichRecommendedSittersWithReviewSummaries(
-          result.data.recommendedSitters,
-        );
-        const answer = normalizeAnswerWithReviewSummaries(
-          result.data.answer,
-          recommendedSitters,
-        );
-
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            id: `assistant-${Date.now()}`,
-            role: 'assistant',
-            content: answer,
-            recommendedSitters,
-            sources: result.data.sources ?? [],
+      const streamedResponse = await streamAiChatMessage(
+        {
+          message: trimmedMessage,
+          sessionId: chatSessionId,
+        },
+        {
+          onSession: (sessionId) => {
+            setChatSessionId(sessionId);
           },
-        ]);
-      } else {
-        setErrorMessage(getAiChatErrorMessage(result.error));
-      }
-    } catch {
-      setErrorMessage(
-        'AI 응답이 늦어지고 있거나 연결이 불안정합니다. 잠시 후 다시 시도해 주세요.',
+          onMessage: (chunk) => {
+            setMessages((prevMessages) => {
+              const existingMessage = prevMessages.find(
+                (item) => item.id === assistantMessageId,
+              );
+              const nextContent = `${existingMessage?.content ?? ''}${chunk}`;
+
+              if (existingMessage) {
+                return prevMessages.map((item) =>
+                  item.id === assistantMessageId
+                    ? { ...item, content: nextContent }
+                    : item,
+                );
+              }
+
+              return [
+                ...prevMessages,
+                {
+                  id: assistantMessageId,
+                  role: 'assistant',
+                  content: nextContent,
+                  recommendedSitters: [],
+                  sources: [],
+                },
+              ];
+            });
+          },
+          onSources: (sources) => {
+            upsertAssistantMessage({ sources });
+          },
+          onDone: (response) => {
+            if (response.sessionId) {
+              setChatSessionId(response.sessionId);
+            }
+          },
+          onError: (streamErrorMessage) => {
+            setErrorMessage(streamErrorMessage);
+          },
+        },
       );
+      const recommendedSitters = await enrichRecommendedSittersWithReviewSummaries(
+        streamedResponse.recommendedSitters,
+      );
+      const answer = normalizeAnswerWithReviewSummaries(
+        streamedResponse.answer,
+        recommendedSitters,
+      );
+
+      if (streamedResponse.sessionId) {
+        setChatSessionId(streamedResponse.sessionId);
+      }
+
+      upsertAssistantMessage({
+        content: answer,
+        recommendedSitters,
+        sources: streamedResponse.sources ?? [],
+      });
+    } catch (error) {
+      const nextErrorMessage =
+        error instanceof Error && error.message
+          ? error.message
+          : 'AI 응답이 늦어지고 있거나 연결이 불안정합니다. 잠시 후 다시 시도해 주세요.';
+
+      setErrorMessage(
+        nextErrorMessage,
+      );
+      upsertAssistantMessage({
+        content: nextErrorMessage,
+      });
     } finally {
       clearPendingNoticeTimer();
       setPendingMessage('');

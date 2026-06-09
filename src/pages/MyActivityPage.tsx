@@ -1,13 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   acceptCareRequest,
+  acceptProposal,
   cancelSentCareRequest,
+  getMyPosts,
   getMyProposals,
+  getPostProposals,
   getReceivedCareRequests,
   getSentCareRequests,
   rejectCareRequest,
+  rejectProposal,
   withdrawProposal,
 } from '../api';
 import {
@@ -19,10 +23,15 @@ import type { ApiResponse, CareRequest, Id, Proposal, TimeSlotResponse } from '.
 
 type CareRequestAction = (requestId: Id) => Promise<ApiResponse<CareRequest>>;
 type ProposalAction = (proposalId: Id) => Promise<ApiResponse<Proposal>>;
-type ActivityTab = 'sent' | 'received' | 'proposals';
+type ActivityTab = 'sent' | 'received' | 'proposals' | 'received-proposals';
 
 const getActivityTab = (value: string | null): ActivityTab | null => {
-  if (value === 'sent' || value === 'received' || value === 'proposals') {
+  if (
+    value === 'sent' ||
+    value === 'received' ||
+    value === 'proposals' ||
+    value === 'received-proposals'
+  ) {
     return value;
   }
 
@@ -46,11 +55,17 @@ const getProposalActionMessage = (actionLabel: string) =>
 function MyActivityPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedTab = getActivityTab(searchParams.get('tab'));
+  // 알림에서 ?requestId=N으로 진입하면 해당 카드로 스크롤 + 강조합니다.
+  const focusRequestIdRaw = searchParams.get('requestId');
+  const focusRequestId = focusRequestIdRaw ? Number(focusRequestIdRaw) : null;
+  const focusedCardRef = useRef<HTMLDivElement | null>(null);
   const [sentRequests, setSentRequests] = useState<CareRequest[]>([]);
   const [receivedRequests, setReceivedRequests] = useState<CareRequest[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [receivedProposals, setReceivedProposals] = useState<Proposal[]>([]);
   const [receivedError, setReceivedError] = useState('');
   const [proposalsError, setProposalsError] = useState('');
+  const [receivedProposalsError, setReceivedProposalsError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [actionKey, setActionKey] = useState('');
   const [message, setMessage] = useState('');
@@ -62,13 +77,16 @@ function MyActivityPage() {
     setErrorMessage('');
     setReceivedError('');
     setProposalsError('');
+    setReceivedProposalsError('');
 
     try {
-      const [sentResult, receivedResult, proposalsResult] = await Promise.all([
-        getSentCareRequests(),
-        getReceivedCareRequests(),
-        getMyProposals(),
-      ]);
+      const [sentResult, receivedResult, proposalsResult, myPostsResult] =
+        await Promise.all([
+          getSentCareRequests(),
+          getReceivedCareRequests(),
+          getMyProposals(),
+          getMyPosts({ page: 0, size: 50 }),
+        ]);
 
       if (sentResult.success) {
         setSentRequests(sentResult.data);
@@ -89,6 +107,37 @@ function MyActivityPage() {
       } else {
         setProposalsError(proposalsResult.error.message);
       }
+
+      // 내 공고에 들어온 제안을 공고별로 한 번에 모읍니다.
+      // (백엔드에 GET /proposals/received 같은 API가 생기면 한 번의 호출로 대체 가능)
+      if (myPostsResult.success) {
+        const allProposals: Proposal[] = [];
+        const proposalResults = await Promise.all(
+          myPostsResult.data.content.map((post) => getPostProposals(post.id)),
+        );
+
+        for (const result of proposalResults) {
+          if (result.success) {
+            allProposals.push(...result.data);
+          }
+        }
+
+        // 최신 제안 먼저, 같은 시간이면 id 역순.
+        allProposals.sort((first, second) => {
+          const firstAt = first.createdAt
+            ? new Date(first.createdAt).getTime()
+            : 0;
+          const secondAt = second.createdAt
+            ? new Date(second.createdAt).getTime()
+            : 0;
+          if (firstAt !== secondAt) return secondAt - firstAt;
+          return Number(second.id) - Number(first.id);
+        });
+
+        setReceivedProposals(allProposals);
+      } else {
+        setReceivedProposalsError(myPostsResult.error.message);
+      }
     } catch {
       setErrorMessage('요청과 제안 목록을 불러오지 못했습니다.');
     } finally {
@@ -103,6 +152,16 @@ function MyActivityPage() {
 
     return () => window.clearTimeout(timerId);
   }, []);
+
+  // 로딩이 끝나면 ?requestId=N 카드로 스크롤합니다.
+  useEffect(() => {
+    if (isLoading || !focusRequestId || !focusedCardRef.current) return;
+    focusedCardRef.current.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, focusRequestId, receivedRequests.length]);
 
   const updateCareRequest = (updatedRequest: CareRequest) => {
     setSentRequests((prevRequests) =>
@@ -119,6 +178,11 @@ function MyActivityPage() {
 
   const updateProposal = (updatedProposal: Proposal) => {
     setProposals((prevProposals) =>
+      prevProposals.map((proposal) =>
+        proposal.id === updatedProposal.id ? updatedProposal : proposal,
+      ),
+    );
+    setReceivedProposals((prevProposals) =>
       prevProposals.map((proposal) =>
         proposal.id === updatedProposal.id ? updatedProposal : proposal,
       ),
@@ -206,7 +270,7 @@ function MyActivityPage() {
           요청과 제안 목록을 불러오는 중입니다.
         </p>
       ) : !selectedTab ? (
-        <section className="mt-6 grid gap-4 md:grid-cols-3">
+        <section className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <ActivitySummaryCard
             title="보낸 돌봄 요청"
             count={sentRequests.length}
@@ -235,6 +299,17 @@ function MyActivityPage() {
             onClick={() => setSearchParams({ tab: 'proposals' })}
             unavailable={Boolean(proposalsError)}
           />
+          <ActivitySummaryCard
+            title="받은 제안"
+            count={receivedProposals.length}
+            description={
+              receivedProposalsError
+                ? '내 공고를 불러올 수 없어 받은 제안을 확인할 수 없습니다.'
+                : '내가 등록한 공고에 시터들이 보낸 제안을 확인합니다.'
+            }
+            onClick={() => setSearchParams({ tab: 'received-proposals' })}
+            unavailable={Boolean(receivedProposalsError)}
+          />
         </section>
       ) : (
         <div className="mt-6 grid gap-6">
@@ -245,6 +320,12 @@ function MyActivityPage() {
           >
             요청/제안 요약으로
           </button>
+
+          {focusRequestId && selectedTab === 'received' && (
+            <p className="rounded-2xl bg-[#FFF7F2] px-4 py-3 text-sm font-medium text-[#B44727]">
+              알림에서 진입한 돌봄 요청 #{focusRequestId} 으로 이동했습니다.
+            </p>
+          )}
 
           {selectedTab === 'sent' && (
             <ActivitySection title="보낸 돌봄 요청" count={sentRequests.length}>
@@ -287,48 +368,60 @@ function MyActivityPage() {
               {!receivedError && receivedRequests.length === 0 && (
                 <EmptyMessage text="받은 돌봄 요청이 없습니다." />
               )}
-              {receivedRequests.map((request) => (
-                <CareRequestCard
-                  key={`received-${request.id}`}
-                  request={request}
-                  actionArea={
-                    request.status === 'PENDING' && (
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          disabled={actionKey === `accept-${request.id}`}
-                          className="rounded-2xl bg-[#2A2622] px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
-                          onClick={() =>
-                            void handleCareRequestAction(
-                              request.id,
-                              'accept',
-                              '수락',
-                              acceptCareRequest,
-                            )
-                          }
-                        >
-                          수락
-                        </button>
-                        <button
-                          type="button"
-                          disabled={actionKey === `reject-${request.id}`}
-                          className="rounded-2xl bg-[#FFF0EA] px-4 py-3 text-sm font-bold text-[#B44727] disabled:opacity-60"
-                          onClick={() =>
-                            void handleCareRequestAction(
-                              request.id,
-                              'reject',
-                              '거절',
-                              rejectCareRequest,
-                            )
-                          }
-                        >
-                          거절
-                        </button>
-                      </div>
-                    )
-                  }
-                />
-              ))}
+              {receivedRequests.map((request) => {
+                const isFocused = focusRequestId === Number(request.id);
+                return (
+                  <div
+                    key={`received-${request.id}`}
+                    ref={isFocused ? focusedCardRef : null}
+                    className={
+                      isFocused
+                        ? 'rounded-2xl ring-4 ring-[#E26B4A] ring-offset-2 ring-offset-[#FAF6F1] transition'
+                        : ''
+                    }
+                  >
+                    <CareRequestCard
+                      request={request}
+                      actionArea={
+                        request.status === 'PENDING' && (
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              disabled={actionKey === `accept-${request.id}`}
+                              className="rounded-2xl bg-[#2A2622] px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
+                              onClick={() =>
+                                void handleCareRequestAction(
+                                  request.id,
+                                  'accept',
+                                  '수락',
+                                  acceptCareRequest,
+                                )
+                              }
+                            >
+                              수락
+                            </button>
+                            <button
+                              type="button"
+                              disabled={actionKey === `reject-${request.id}`}
+                              className="rounded-2xl bg-[#FFF0EA] px-4 py-3 text-sm font-bold text-[#B44727] disabled:opacity-60"
+                              onClick={() =>
+                                void handleCareRequestAction(
+                                  request.id,
+                                  'reject',
+                                  '거절',
+                                  rejectCareRequest,
+                                )
+                              }
+                            >
+                              거절
+                            </button>
+                          </div>
+                        )
+                      }
+                    />
+                  </div>
+                );
+              })}
             </ActivitySection>
           )}
 
@@ -363,6 +456,62 @@ function MyActivityPage() {
                       >
                         제안 철회
                       </button>
+                    )
+                  }
+                />
+              ))}
+            </ActivitySection>
+          )}
+
+          {selectedTab === 'received-proposals' && (
+            <ActivitySection
+              title="받은 제안"
+              count={receivedProposals.length}
+            >
+              {receivedProposalsError && (
+                <EmptyMessage text={receivedProposalsError} />
+              )}
+              {!receivedProposalsError && receivedProposals.length === 0 && (
+                <EmptyMessage text="내 공고에 들어온 제안이 아직 없습니다." />
+              )}
+              {receivedProposals.map((proposal) => (
+                <ProposalCard
+                  key={`received-${proposal.id}`}
+                  proposal={proposal}
+                  actionArea={
+                    proposal.status === 'PENDING' && (
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          disabled={actionKey === `accept-${proposal.id}`}
+                          className="rounded-2xl bg-[#2A2622] px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
+                          onClick={() =>
+                            void handleProposalAction(
+                              proposal.id,
+                              'accept',
+                              '수락',
+                              acceptProposal,
+                            )
+                          }
+                        >
+                          수락
+                        </button>
+                        <button
+                          type="button"
+                          disabled={actionKey === `reject-${proposal.id}`}
+                          className="rounded-2xl bg-[#FFF0EA] px-4 py-3 text-sm font-bold text-[#B44727] disabled:opacity-60"
+                          onClick={() =>
+                            void handleProposalAction(
+                              proposal.id,
+                              'reject',
+                              '거절',
+                              rejectProposal,
+                            )
+                          }
+                        >
+                          거절
+                        </button>
+                      </div>
                     )
                   }
                 />
