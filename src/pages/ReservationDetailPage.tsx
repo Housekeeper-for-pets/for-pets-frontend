@@ -514,7 +514,7 @@ function ReservationDetailPage() {
             </span>
           </div>
 
-          <dl className="mt-7 grid gap-3 sm:grid-cols-3">
+          <dl className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div className="rounded-2xl bg-[#FAF6F1] p-4">
               <dt className="text-xs font-bold text-[#9B8E82]">결제 상태</dt>
               <dd className="mt-2 text-lg font-bold text-[#2A2622]">
@@ -534,6 +534,62 @@ function ReservationDetailPage() {
               </dd>
             </div>
           </dl>
+
+          {(() => {
+            // 현재 로그인 유저의 역할을 판별해 "실 결제 금액"을 보여줍니다.
+            const isGuardian = currentMember?.id === reservation.guardianId;
+            const isSitter = currentMember?.id === reservation.sitterMemberId;
+            const myAmount = isGuardian
+              ? reservation.guardianPrice
+              : isSitter
+                ? reservation.sitterPrice
+                : null;
+            const myRoleLabel = isGuardian ? '보호자' : isSitter ? '시터' : null;
+            const myPaid = isGuardian
+              ? reservation.guardianPaid
+              : isSitter
+                ? reservation.sitterPaid
+                : false;
+
+            return (
+              <div className="mt-5 rounded-2xl border border-[#E7DCD1] bg-[#FFFCF8] p-5">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl bg-[#FAF6F1] p-4">
+                    <dt className="text-xs font-bold text-[#9B8E82]">
+                      보호자 결제금액 · {reservation.guardianPaid ? '결제 완료' : '결제 대기'}
+                    </dt>
+                    <dd className="mt-1 text-lg font-bold text-[#2A2622]">
+                      {reservation.guardianPrice.toLocaleString('ko-KR')}원
+                    </dd>
+                  </div>
+                  <div className="rounded-2xl bg-[#FAF6F1] p-4">
+                    <dt className="text-xs font-bold text-[#9B8E82]">
+                      시터 결제금액 · {reservation.sitterPaid ? '결제 완료' : '결제 대기'}
+                    </dt>
+                    <dd className="mt-1 text-lg font-bold text-[#2A2622]">
+                      {reservation.sitterPrice.toLocaleString('ko-KR')}원
+                    </dd>
+                  </div>
+                </div>
+
+                {myAmount !== null && myRoleLabel && (
+                  <div className="mt-4 flex items-baseline justify-between gap-3 rounded-2xl bg-[#E26B4A] p-4">
+                    <p className="text-xs font-bold text-white/80">
+                      실 결제 금액 ({myRoleLabel}) · {myPaid ? '결제 완료' : '결제 대기'}
+                    </p>
+                    <p className="text-2xl font-black text-white">
+                      {myAmount.toLocaleString('ko-KR')}원
+                    </p>
+                  </div>
+                )}
+
+                <p className="mt-4 rounded-2xl bg-[#FFF0EA] p-4 text-xs leading-5 text-[#B44727]">
+                  ※ 결제가 확정된 이후 개인 사정으로 취소하면, 시터의 경우 지불한
+                  전체 금액을, 보호자의 경우 지불 금액의 20%를 위약금으로 지불합니다.
+                </p>
+              </div>
+            );
+          })()}
         </div>
 
         <aside className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">

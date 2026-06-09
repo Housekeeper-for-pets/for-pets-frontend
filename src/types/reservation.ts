@@ -37,6 +37,8 @@ export interface Reservation {
   status: ReservationStatus;
   source: ReservationSource;
   sourceId?: Id;
+  guardianPrice: number;
+  sitterPrice: number;
   guardianPaid?: boolean;
   sitterPaid?: boolean;
   cancelReason?: string | null;

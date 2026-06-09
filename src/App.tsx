@@ -2,6 +2,9 @@ import { Route, Routes } from 'react-router-dom';
 import AppLayout from './components/AppLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminPage from './pages/AdminPage';
+import AdminCancellationsPage from './pages/AdminCancellationsPage';
+import AdminSitterDetailPage from './pages/AdminSitterDetailPage';
+import AdminSittersPage from './pages/AdminSittersPage';
 import AiSitterChatPage from './pages/AiSitterChatPage';
 import CareRequestCreatePage from './pages/CareRequestCreatePage';
 import ChatPage from './pages/ChatPage';
@@ -31,22 +34,32 @@ function App() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<HomePage />} />
+        {/* 비로그인 상태에서도 시터/공고 목록과 상세는 열어 둡니다. */}
         <Route path="/sitters" element={<SittersPage />} />
         <Route path="/sitters/:sitterId" element={<SitterDetailPage />} />
+        <Route path="/posts" element={<PostsPage />} />
+        <Route path="/posts/:postId" element={<PostDetailPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/me" element={<MyProfilePage />} />
           <Route path="/ai-chat" element={<AiSitterChatPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/activity" element={<MyActivityPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/admin/sitters" element={<AdminSittersPage />} />
+          <Route
+            path="/admin/sitters/:sitterProfileId"
+            element={<AdminSitterDetailPage />}
+          />
+          <Route
+            path="/admin/cancellations"
+            element={<AdminCancellationsPage />}
+          />
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/my-reviews" element={<MyReviewsPage />} />
           <Route path="/my-sitter" element={<MySitterProfilePage />} />
           <Route path="/payments" element={<PaymentsPage />} />
           <Route path="/pets" element={<PetsPage />} />
-          <Route path="/posts" element={<PostsPage />} />
           <Route path="/posts/new" element={<PostCreatePage />} />
-          <Route path="/posts/:postId" element={<PostDetailPage />} />
           <Route path="/posts/:postId/edit" element={<PostCreatePage />} />
           <Route path="/reservations" element={<ReservationsPage />} />
           <Route path="/reservations/:reservationId" element={<ReservationDetailPage />} />

@@ -15,6 +15,7 @@ import {
   sitterApprovalStatusLabels,
   sitterStatusLabels,
 } from '../constants/options';
+import { useAuth } from '../hooks/useAuth';
 import type { SitterProfile } from '../types';
 import type { Review, SitterReviewSummary } from '../types';
 
@@ -66,6 +67,7 @@ const getReviewSummaryErrorMessage = (
 // 특정 시터의 프로필과 가능 시간을 보여주는 상세 페이지입니다.
 function SitterDetailPage() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const { sitterId } = useParams<{ sitterId: string }>();
   const [sitter, setSitter] = useState<SitterProfile | null>(null);
   const [reviewSummary, setReviewSummary] =
@@ -368,22 +370,35 @@ function SitterDetailPage() {
           <p className="text-sm font-bold text-[#E26B4A]">REQUEST</p>
           <h2 className="mt-3 text-xl font-bold text-[#2A2622]">돌봄 요청</h2>
           <p className="mt-2 text-sm leading-6 text-[#6F675F]">
-            반려동물과 돌봄 시간을 선택해 이 시터에게 직접 요청할 수 있습니다.
+            {isAuthenticated
+              ? '반려동물과 돌봄 시간을 선택해 이 시터에게 직접 요청할 수 있습니다.'
+              : '돌봄 요청과 채팅은 로그인 후 이용할 수 있습니다.'}
           </p>
-          <Link
-            to={`/sitters/${sitter.id}/requests/new`}
-            className="mt-5 inline-flex w-full justify-center rounded-2xl bg-[#E26B4A] px-4 py-3 text-sm font-bold text-white"
-          >
-            요청 작성하기
-          </Link>
-          <button
-            type="button"
-            onClick={() => void handleOpenChat()}
-            disabled={isOpeningChat}
-            className="mt-3 inline-flex w-full justify-center rounded-2xl border border-[#E7DCD1] px-4 py-3 text-sm font-bold text-[#6F675F] disabled:cursor-not-allowed disabled:text-[#B0A59A]"
-          >
-            {isOpeningChat ? '채팅방 여는 중...' : '채팅하기'}
-          </button>
+          {isAuthenticated ? (
+            <>
+              <Link
+                to={`/sitters/${sitter.id}/requests/new`}
+                className="mt-5 inline-flex w-full justify-center rounded-2xl bg-[#E26B4A] px-4 py-3 text-sm font-bold text-white"
+              >
+                요청 작성하기
+              </Link>
+              <button
+                type="button"
+                onClick={() => void handleOpenChat()}
+                disabled={isOpeningChat}
+                className="mt-3 inline-flex w-full justify-center rounded-2xl border border-[#E7DCD1] px-4 py-3 text-sm font-bold text-[#6F675F] disabled:cursor-not-allowed disabled:text-[#B0A59A]"
+              >
+                {isOpeningChat ? '채팅방 여는 중...' : '채팅하기'}
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/login"
+              className="mt-5 inline-flex w-full justify-center rounded-2xl bg-[#E26B4A] px-4 py-3 text-sm font-bold text-white"
+            >
+              로그인하러 가기
+            </Link>
+          )}
         </aside>
       </section>
 

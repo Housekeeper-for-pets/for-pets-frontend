@@ -1,5 +1,5 @@
 import type { Id, ISODateTimeString, PageQuery, TimeString } from './common';
-import type { Region } from './member';
+import type { MemberGender, Region } from './member';
 import type { PetSize, PetSpecies } from './pet';
 
 export type PossiblePetType = PetSpecies | 'ALL';
@@ -96,4 +96,30 @@ export interface AdminSitterProfile {
 
 export interface RejectSitterRequest {
   rejectReason: string;
+}
+
+// 관리자 시터 상세 — 시터 프로필 + 신청자 회원 정보가 한 번에 옵니다.
+export interface AdminSitterDetail {
+  // Sitter Profile
+  sitterProfileId: Id;
+  introduction?: string | null;
+  experienceYears: number;
+  possiblePetType: PossiblePetType;
+  possiblePetSize: PossiblePetSize;
+  pricePerHour: number;
+  status: SitterProfileStatus;
+  approvalStatus: SitterApprovalStatus;
+  rejectReason?: string | null;
+  evaluatedBy?: Id | null;
+  evaluatedAt?: ISODateTimeString | null;
+  profileCreatedAt?: ISODateTimeString;
+  profileUpdatedAt?: ISODateTimeString;
+  // Member (신청자)
+  memberId: Id;
+  email: string;
+  nickname: string;
+  phone: string;
+  region: Region;
+  gender?: MemberGender;
+  memberCreatedAt?: ISODateTimeString;
 }

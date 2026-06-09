@@ -7,16 +7,16 @@ import type { Member, Pet } from '../types';
 import BrandLogo from './BrandLogo';
 
 const navItems = [
-  { to: '/', label: '홈', icon: 'home', group: '매칭' },
-  { to: '/me', label: '내 계정', icon: 'user', group: '계정' },
-  { to: '/notifications', label: '알림', icon: 'bell', group: '계정' },
-  { to: '/activity', label: '요청/제안', icon: 'activity', group: '매칭' },
-  { to: '/reservations', label: '예약 관리', icon: 'calendar', group: '매칭' },
-  { to: '/chat', label: '채팅', icon: 'chat', group: '매칭' },
-  { to: '/posts', label: '공고 보기', icon: 'post', group: '매칭' },
-  { to: '/sitters', label: '시터 찾기', icon: 'sitter', group: '매칭' },
-  { to: '/ai-chat', label: 'AI 추천', icon: 'spark', group: '매칭' },
-  { to: '/admin', label: '관리자', icon: 'badge', group: '관리' },
+  { to: '/', label: '홈', icon: 'home', group: '매칭', requiresAuth: false },
+  { to: '/me', label: '내 계정', icon: 'user', group: '계정', requiresAuth: true },
+  { to: '/notifications', label: '알림', icon: 'bell', group: '계정', requiresAuth: true },
+  { to: '/activity', label: '요청/제안', icon: 'activity', group: '매칭', requiresAuth: true },
+  { to: '/reservations', label: '예약 관리', icon: 'calendar', group: '매칭', requiresAuth: true },
+  { to: '/chat', label: '채팅', icon: 'chat', group: '매칭', requiresAuth: true },
+  { to: '/posts', label: '공고 보기', icon: 'post', group: '매칭', requiresAuth: false },
+  { to: '/sitters', label: '시터 찾기', icon: 'sitter', group: '매칭', requiresAuth: false },
+  { to: '/ai-chat', label: 'AI 추천', icon: 'spark', group: '매칭', requiresAuth: true },
+  { to: '/admin', label: '관리자', icon: 'badge', group: '관리', requiresAuth: true },
 ];
 
 const navGroups = ['계정', '매칭', '관리'];
@@ -193,6 +193,7 @@ function AppLayout() {
                 <div className="mt-2 grid gap-1">
                   {navItems
                     .filter((item) => item.group === group)
+                    .filter((item) => isAuthenticated || !item.requiresAuth)
                     .filter((item) => item.to !== '/admin' || member?.role === 'ADMIN')
                     .map((item) => (
                       <NavLink
@@ -275,6 +276,7 @@ function AppLayout() {
 
               <nav className="flex min-w-0 flex-1 gap-2 overflow-x-auto lg:hidden">
                 {navItems
+                  .filter((item) => isAuthenticated || !item.requiresAuth)
                   .filter((item) => item.to !== '/admin' || member?.role === 'ADMIN')
                   .map((item) => (
                   <NavLink
