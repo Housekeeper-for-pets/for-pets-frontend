@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import {
-  createOrGetChatRoom,
   getMyInfo,
   getChatMessages,
   getChatRooms,
@@ -73,7 +72,6 @@ function ChatPage() {
   const [selectedRoom, setSelectedRoom] = useState<ChatRoomListItem | null>(null);
   const [messages, setMessages] = useState<ChatMessageItem[]>([]);
   const [currentMemberId, setCurrentMemberId] = useState<number | null>(null);
-  const [opponentId, setOpponentId] = useState('');
   const [messageText, setMessageText] = useState('');
   const [socketStatus, setSocketStatus] = useState('연결 전');
   const [isLoadingRooms, setIsLoadingRooms] = useState(true);
@@ -201,34 +199,40 @@ function ChatPage() {
     return () => window.clearInterval(intervalId);
   }, []);
 
-  // 채팅방 메시지 조회 = 서버 읽음 위치 갱신 (ChatMessageService.updateReadPosition)
+  // 채팅방 메시지 조회 = 서버 읽음 위치 갱신 (ChatMessageService.updateReadPosition §9)
   // connectWebSocket 클로저 안에서도 최신 함수를 참조할 수 있도록 ref로 보관
-  const markCurrentRoomAsReadRef = useRef<((chatRoomId: number) => Promise<void>) | null>(null);
+  // updateOnly=true : broadcast 직접 추가 후 호출 → setMessages 생략, lastReadMessageId만 갱신
+  // updateOnly=false: 초기 로드 또는 탭 전환 → setMessages로 메시지 목록 전체 갱신
+  const markCurrentRoomAsReadRef = useRef<
+      ((chatRoomId: number, isInitialLoad?: boolean, updateOnly?: boolean) => Promise<void>) | null
+  >(null);
 
-  const markCurrentRoomAsRead = useCallback(async (chatRoomId: number, isInitialLoad = false) => {
-    try {
-      const result = await getChatMessages(chatRoomId, { size: 50 });
+  const markCurrentRoomAsRead = useCallback(
+      async (chatRoomId: number, isInitialLoad = false, updateOnly = false) => {
+        try {
+          const result = await getChatMessages(chatRoomId, { size: 50 });
 
-      if (result.success) {
-        const sorted = sortMessages(result.data.items);
-        setMessages(sorted);
-        // 로컬 unreadCount도 즉시 0으로 갱신 (5초 폴링이 덮어쓰기 전에 반영)
-        setRooms((prevRooms) =>
-            prevRooms.map((room) =>
-                room.chatRoomId === chatRoomId
-                    ? { ...room, unreadCount: 0 }
-                    : room,
-            ),
-        );
-        // 첫 진입 로드일 때만 첫 안읽은 메시지로 스크롤 예약
-        if (isInitialLoad) {
-          isInitialLoadRef.current = true;
+          if (result.success) {
+            if (!updateOnly) {
+              const sorted = sortMessages(result.data.items);
+              setMessages(sorted);
+              if (isInitialLoad) {
+                isInitialLoadRef.current = true;
+              }
+            }
+            // 로컬 unreadCount는 항상 0으로 갱신 (5초 폴링이 덮어쓰기 전에 반영)
+            setRooms((prevRooms) =>
+                prevRooms.map((room) =>
+                    room.chatRoomId === chatRoomId ? { ...room, unreadCount: 0 } : room,
+                ),
+            );
+          }
+        } catch {
+          // 읽음 갱신 실패는 조용히 무시 (메시지는 이미 화면에 있음)
         }
-      }
-    } catch {
-      // 읽음 갱신 실패는 조용히 무시 (메시지는 이미 화면에 있음)
-    }
-  }, []);
+      },
+      [],
+  );
 
   useEffect(() => {
     markCurrentRoomAsReadRef.current = markCurrentRoomAsRead;
@@ -344,9 +348,25 @@ function ChatPage() {
 
           if (isActiveRoom) {
             // 현재 열린 채팅방에 메시지 수신
-            // → getChatMessages 재호출로 서버 lastReadMessageId 갱신 (= 읽음 처리)
-            // → 응답 메시지로 setMessages 갱신 + unreadCount 로컬 0 처리
-            void markCurrentRoomAsReadRef.current?.(broadcast.chatRoomId);
+            // 1) broadcast를 메시지 목록에 즉시 추가 → 렌더링 지연 없음
+            // 2) getChatMessages 비동기 재호출 → 서버 lastReadMessageId 갱신 (§9 읽음 처리)
+            setMessages((prevMessages) =>
+                sortMessages([
+                  ...prevMessages,
+                  {
+                    messageId: broadcast.messageId,
+                    messageType: broadcast.messageType,
+                    senderId: broadcast.senderId,
+                    senderNickname: broadcast.senderNickname,
+                    content: broadcast.content,
+                    createdAt: broadcast.createdAt,
+                    isMine,
+                    isReadByOpponent: false,
+                  },
+                ]),
+            );
+            // updateOnly=true: 메시지 목록은 이미 broadcast로 추가됨 → lastReadMessageId 갱신만
+            void markCurrentRoomAsReadRef.current?.(broadcast.chatRoomId, false, true);
           } else {
             // 백그라운드 채팅방에 메시지 수신: UI에 메시지 직접 추가하지 않고 unreadCount만 올림
             if (!existingRoom) {
@@ -423,12 +443,8 @@ function ChatPage() {
     };
   }, [fetchRooms]);
 
-  // isRoomsLoaded: boolean으로 관리해 "빈 배열 → 데이터 있음" 전환 시 한 번만 트리거
-  // rooms 배열 자체를 의존성으로 두면 방 추가마다 소켓 재생성되므로 boolean으로 축소
-  const isRoomsLoaded = rooms.length > 0;
-
   useEffect(() => {
-    if (currentMemberId === null || !isRoomsLoaded) return;
+    if (currentMemberId === null) return;
 
     // 이미 OPEN 상태면 소켓 재생성 없이 새 방 구독만 추가
     if (socketRef.current?.readyState === WebSocket.OPEN) {
@@ -448,54 +464,13 @@ function ChatPage() {
       socketRef.current?.close();
       socketRef.current = null;
     };
-  }, [currentMemberId, isRoomsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentMemberId]); // eslint-disable-line react-hooks/exhaustive-deps
   // ↑ rooms 배열 자체는 의존성 제외 — rooms 변경은 아래 useEffect에서 subscribeNewRoom으로 처리
 
   // [수정 3] rooms가 바뀔 때 새 채팅방만 구독 추가 (소켓 재생성 없음)
   useEffect(() => {
     rooms.forEach((room) => subscribeNewRoom(room.chatRoomId));
   }, [rooms, subscribeNewRoom]);
-
-  const handleCreateRoom = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const parsedOpponentId = Number(opponentId);
-
-    if (!parsedOpponentId) {
-      setErrorMessage('상대 회원 ID를 입력해 주세요.');
-      return;
-    }
-
-    setErrorMessage('');
-
-    try {
-      const result = await createOrGetChatRoom({ opponentId: parsedOpponentId });
-
-      if (result.success) {
-        const nextRoom: ChatRoomListItem = {
-          chatRoomId: result.data.chatRoomId,
-          opponentId: result.data.opponentId,
-          opponentNickname: result.data.opponentNickname,
-          lastMessage: null,
-          lastMessageType: null,
-          lastMessageAt: null,
-          unreadCount: 0,
-        };
-
-        setOpponentId('');
-        await fetchRooms();
-        upsertRoom(nextRoom);
-        setSelectedRoom(nextRoom);
-
-        // [수정 3] 새 채팅방 생성 직후 소켓 재연결 없이 구독만 추가
-        subscribeNewRoom(nextRoom.chatRoomId);
-        return;
-      }
-
-      setErrorMessage(result.error.message);
-    } catch {
-      setErrorMessage('채팅방 생성 중 문제가 발생했습니다.');
-    }
-  };
 
   const handleSendMessage = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -543,12 +518,12 @@ function ChatPage() {
             <p className="text-sm font-bold text-[#E26B4A]">CHAT</p>
             <h1 className="mt-3 text-3xl font-bold text-[#2A2622]">채팅</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[#6F675F]">
-              상대 회원 ID로 채팅방을 열고, STOMP WebSocket으로 메시지를 주고받습니다.
+              공고 또는 시터 프로필에서 채팅을 시작할 수 있습니다.
             </p>
           </div>
           <span className="w-fit rounded-full bg-white px-4 py-2 text-sm font-bold text-[#6F675F] shadow-sm">
-          {socketStatus}
-        </span>
+            {socketStatus}
+          </span>
         </section>
 
         {errorMessage && (
@@ -559,24 +534,7 @@ function ChatPage() {
 
         <section className="mt-6 grid gap-6 lg:grid-cols-[340px_1fr]">
           <aside className="rounded-2xl border border-[#E7DCD1] bg-white p-5 shadow-sm">
-            <form className="grid gap-3" onSubmit={handleCreateRoom}>
-              <input
-                  className={inputClassName}
-                  type="number"
-                  min={1}
-                  placeholder="상대 회원 ID"
-                  value={opponentId}
-                  onChange={(event) => setOpponentId(event.target.value)}
-              />
-              <button
-                  type="submit"
-                  className="rounded-2xl bg-[#E26B4A] px-4 py-3 text-sm font-bold text-white"
-              >
-                채팅방 열기
-              </button>
-            </form>
-
-            <div className="mt-5 grid gap-3">
+            <div className="grid gap-3">
               {isLoadingRooms && (
                   <p className="rounded-2xl bg-[#FAF6F1] p-4 text-sm text-[#6F675F]">
                     채팅방을 불러오는 중입니다.
@@ -585,7 +543,7 @@ function ChatPage() {
 
               {!isLoadingRooms && rooms.length === 0 && (
                   <p className="rounded-2xl bg-[#FAF6F1] p-4 text-sm text-[#6F675F]">
-                    참여 중인 채팅방이 없습니다.
+                    참여 중인 채팅방이 없습니다. 공고 또는 시터 프로필에서 채팅을 시작해 보세요.
                   </p>
               )}
 
@@ -607,8 +565,8 @@ function ChatPage() {
                       </p>
                       {room.unreadCount > 0 && (
                           <span className="rounded-full bg-[#E26B4A] px-2 py-1 text-[10px] font-bold text-white">
-                      {room.unreadCount}
-                    </span>
+                            {room.unreadCount}
+                          </span>
                       )}
                     </div>
                     <p className="mt-1 line-clamp-1 text-xs text-[#6F675F]">
@@ -678,8 +636,8 @@ function ChatPage() {
                                   >
                                     <div className="h-px flex-1 bg-[#E26B4A] opacity-40" />
                                     <span className="text-[10px] font-bold text-[#E26B4A] opacity-70">
-                            여기서부터 읽지 않은 메시지
-                          </span>
+                                      여기서부터 읽지 않은 메시지
+                                    </span>
                                     <div className="h-px flex-1 bg-[#E26B4A] opacity-40" />
                                   </div>
                               )}
@@ -720,7 +678,7 @@ function ChatPage() {
                 </>
             ) : (
                 <p className="rounded-2xl bg-[#FAF6F1] p-5 text-sm text-[#6F675F]">
-                  왼쪽에서 채팅방을 선택하거나 새 채팅방을 열어주세요.
+                  왼쪽에서 채팅방을 선택해 주세요.
                 </p>
             )}
           </section>
