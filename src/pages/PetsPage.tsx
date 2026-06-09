@@ -290,6 +290,26 @@ function PetsPage() {
         </section>
       )}
 
+      {mode === 'detail' && !isLoading && !selectedPet && (
+        <section className="mt-6 rounded-2xl border border-[#E7DCD1] bg-[#FFF0EA] p-6 shadow-sm">
+          <p className="text-sm font-bold text-[#B44727]">PET NOT FOUND</p>
+          <h2 className="mt-3 text-xl font-bold text-[#2A2622]">
+            접근할 수 없는 반려동물입니다.
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-[#6F675F]">
+            요청하신 반려동물(#{selectedPetId || '-'})은 내 계정에 등록되어 있지
+            않거나 삭제되었어요. 다른 사용자의 반려동물 정보는 조회할 수 없습니다.
+          </p>
+          <button
+            type="button"
+            onClick={moveList}
+            className="mt-5 rounded-2xl border border-[#E7DCD1] bg-white px-4 py-2 text-sm font-bold text-[#6F675F]"
+          >
+            내 반려동물 목록으로
+          </button>
+        </section>
+      )}
+
       {mode === 'detail' && selectedPet && (
         <section className="mt-6 rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">

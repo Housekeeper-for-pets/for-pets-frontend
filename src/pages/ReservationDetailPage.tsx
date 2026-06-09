@@ -535,6 +535,62 @@ function ReservationDetailPage() {
             </div>
           </dl>
 
+          {reservation.status === 'CANCEL_REQUESTED' && (
+            <div className="mt-5 rounded-2xl border border-[#E7DCD1] bg-[#FFF7E6] p-5">
+              <p className="text-sm font-bold text-[#B44727]">CANCEL REVIEW</p>
+              <h3 className="mt-2 text-lg font-bold text-[#2A2622]">
+                불가피한 사유 취소 요청 검토 중
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-[#6F675F]">
+                상대방이 불가피한 이유로 인해 예약 취소를 요청했습니다. 관리자의
+                검토 이후 승인 시 예약이 위약금 없이 취소되며, 거절되면 다시 예약이
+                확정 상태가 됩니다.
+              </p>
+              {reservation.cancelCategory && (
+                <p className="mt-3 text-xs font-bold text-[#8A8178]">
+                  취소 분류:{' '}
+                  {cancelCategoryLabels[reservation.cancelCategory] ??
+                    reservation.cancelCategory}
+                </p>
+              )}
+              {reservation.cancelReason && (
+                <p className="mt-2 rounded-2xl bg-white p-3 text-sm leading-6 text-[#6F675F]">
+                  {reservation.cancelReason}
+                </p>
+              )}
+            </div>
+          )}
+
+          {reservation.status === 'CANCELED' && reservation.cancelReason && (
+            <div className="mt-5 rounded-2xl border border-[#E7DCD1] bg-[#FFF0EA] p-5">
+              <p className="text-sm font-bold text-[#B44727]">CANCELED</p>
+              <h3 className="mt-2 text-lg font-bold text-[#2A2622]">예약 취소 완료</h3>
+              <p className="mt-3 text-sm leading-6 text-[#6F675F]">
+                이 예약은 취소되었습니다. 아래는 취소 사유와 분류입니다.
+              </p>
+              {reservation.cancelCategory && (
+                <p className="mt-3 text-xs font-bold text-[#8A8178]">
+                  취소 분류:{' '}
+                  {cancelCategoryLabels[reservation.cancelCategory] ??
+                    reservation.cancelCategory}
+                  {reservation.canceledBy
+                    ? ` · 취소 주체: ${
+                        reservation.canceledBy === 'GUARDIAN' ? '보호자' : '시터'
+                      }`
+                    : ''}
+                </p>
+              )}
+              <p className="mt-2 rounded-2xl bg-white p-3 text-sm leading-6 text-[#6F675F]">
+                {reservation.cancelReason}
+              </p>
+              {reservation.canceledAt && (
+                <p className="mt-2 text-xs text-[#8A8178]">
+                  취소 시각: {formatDateTime(reservation.canceledAt)}
+                </p>
+              )}
+            </div>
+          )}
+
           {(() => {
             // 현재 로그인 유저의 역할을 판별해 "실 결제 금액"을 보여줍니다.
             const isGuardian = currentMember?.id === reservation.guardianId;

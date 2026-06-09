@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { clearTokens } from '../api/tokenStorage';
 import {
   changeMyPassword,
   createCoupon,
@@ -228,7 +229,15 @@ function MyProfilePage() {
       const result = await deleteMyAccount();
 
       if (result.success) {
-        setSuccessMessage(result.data.message);
+        // 탈퇴 성공 — 토큰만 정리하고 하드 리다이렉트로 홈으로 이동합니다.
+        //
+        // 주의: 여기서 React 상태(setIsAuthenticated)를 먼저 false로 바꾸면
+        // MyProfilePage가 감싸진 <ProtectedRoute>가 즉시 /login으로 Navigate해
+        // navigate('/') 가 동작하기 전에 로그인 화면으로 빠집니다.
+        // window.location.href는 React Router를 거치지 않고 페이지 전체를
+        // 새로 로드하므로 ProtectedRoute 경합을 회피하고 상태도 초기화됩니다.
+        clearTokens();
+        window.location.href = '/';
         return;
       }
 

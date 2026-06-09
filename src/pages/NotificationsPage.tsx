@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   getMyInfo,
   getNotifications,
+  getProposal,
   markNotificationAsRead,
 } from '../api';
 import type { Id, Member, Notification, NotificationType } from '../types';
@@ -11,61 +12,80 @@ const notificationTypeLabels: Record<NotificationType, string> = {
   CARE_LOG: '케어 일지',
   PROPOSAL_ARRIVED: '새 제안',
   MATCHING_CONFIRMED: '매칭 확정',
-  REQUEST_RECEIVED: '케어 요청',
+  REQUEST_RECEIVED: '돌봄 요청',
   PROPOSAL_WITHDRAWN: '제안 철회',
   PAYMENT_COMPLETED: '결제 완료',
+  RESERVATION_CANCELED: '예약 취소 완료',
+  CANCEL_REQUESTED: '예약 취소 요청',
 };
 
 const getIsRead = (notification: Notification) =>
   notification.isRead ?? notification.read ?? false;
 
 const getReferencePath = (notification: Notification) => {
-  // referenceType과 referenceId가 있으면 우선 사용합니다.
-  if (notification.referenceId) {
-    switch (notification.referenceType?.toUpperCase()) {
-      case 'RESERVATION':
-        return `/reservations/${notification.referenceId}`;
-      case 'POST':
-        return `/posts/${notification.referenceId}`;
-      case 'SITTER':
-      case 'SITTER_PROFILE':
-        return `/sitters/${notification.referenceId}`;
-      case 'PROPOSAL':
-        return '/activity?tab=proposals';
-      case 'REQUEST':
-      case 'CARE_REQUEST':
-        return '/activity?tab=received';
-      case 'PAYMENT':
-        return '/payments';
-      default:
-        break;
-    }
-  }
-
-  // referenceType이 없거나 매칭되지 않을 때는 알림 종류 기준으로 분기합니다.
+  // 알림 타입을 가장 우선으로 분기합니다.
+  // (referenceType은 백엔드 구현 차이가 있어 신뢰도가 낮으므로 폴백으로만 사용)
+  // 가정: 백엔드는 각 타입의 "주 엔티티" id를 referenceId로 내려줍니다.
+  //   - PROPOSAL_ARRIVED  → referenceId = postId (제안이 도착한 공고)
+  //   - REQUEST_RECEIVED  → referenceId = careRequestId
+  //   - MATCHING_CONFIRMED→ referenceId = reservationId (새로 생성된 예약)
+  //   - PAYMENT_COMPLETED → referenceId = reservationId
+  //   - CARE_LOG          → referenceId = reservationId
+  //   - RESERVATION_CANCELED / CANCEL_REQUESTED → referenceId = reservationId
   switch (notification.type) {
     case 'REQUEST_RECEIVED':
-      return '/activity?tab=received';
+      // 새로운 돌봄 요청 도착 — 받은 요청 탭에서 해당 요청 카드로 스크롤/하이라이트
+      return notification.referenceId
+        ? `/activity?tab=received&requestId=${notification.referenceId}`
+        : '/activity?tab=received';
     case 'PROPOSAL_ARRIVED':
-      // 공고 작성자가 받은 제안 알림 — 공고에 들어온 제안 확인용 공고 상세 화면 권장.
-      return notification.referenceType?.toUpperCase() === 'POST' &&
-        notification.referenceId
-        ? `/posts/${notification.referenceId}`
-        : '/posts';
+      // 새로운 제안 도착 — 제안이 도착한 공고 상세로 바로 이동
+      // 백엔드가 referenceId를 proposalId로 내려주므로 클릭 시 Proposal을 조회해
+      // postId로 변환 후 이동합니다. (sentinel 값으로 표시)
+      return notification.referenceId
+        ? `proposal:${notification.referenceId}`
+        : '/activity?tab=received-proposals';
     case 'PROPOSAL_WITHDRAWN':
       return '/activity?tab=proposals';
     case 'MATCHING_CONFIRMED':
+      // 제안/요청 수락으로 새 예약이 생성된 경우 — 생성된 예약 상세로 바로 이동
       return notification.referenceId
         ? `/reservations/${notification.referenceId}`
         : '/reservations';
     case 'PAYMENT_COMPLETED':
-      return '/payments';
+      // 결제 완료 — 해당 예약 상세로 이동 (결제 내역 페이지 아님)
+      return notification.referenceId
+        ? `/reservations/${notification.referenceId}`
+        : '/reservations';
     case 'CARE_LOG':
       return notification.referenceId
         ? `/reservations/${notification.referenceId}`
         : '/reservations';
-    default:
+    case 'RESERVATION_CANCELED':
+      return notification.referenceId
+        ? `/reservations/${notification.referenceId}`
+        : '/reservations';
+    case 'CANCEL_REQUESTED':
+      return notification.referenceId
+        ? `/reservations/${notification.referenceId}`
+        : '/reservations';
+    default: {
+      // 알 수 없는 타입 — referenceType 기준 폴백
+      if (notification.referenceId) {
+        switch (notification.referenceType?.toUpperCase()) {
+          case 'RESERVATION':
+            return `/reservations/${notification.referenceId}`;
+          case 'POST':
+            return `/posts/${notification.referenceId}`;
+          case 'SITTER':
+          case 'SITTER_PROFILE':
+            return `/sitters/${notification.referenceId}`;
+          default:
+            break;
+        }
+      }
       return null;
+    }
   }
 };
 
@@ -80,13 +100,46 @@ const formatDateTime = (value?: string) => {
 
 // 알림 목록과 SSE 실시간 수신 상태를 확인하는 페이지입니다.
 function NotificationsPage() {
+  const navigate = useNavigate();
   const [member, setMember] = useState<Member | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [processingId, setProcessingId] = useState<Id | null>(null);
+  // 제안 알림 → Post 변환 조회 중인 알림 id (버튼 비활성화용)
+  const [resolvingId, setResolvingId] = useState<Id | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [streamMessage, setStreamMessage] = useState('');
+
+  // 제안 sentinel 경로를 받으면 Proposal을 조회해 실제 Post 경로로 이동합니다.
+  const handleNavigateToReference = async (
+    notification: Notification,
+    path: string,
+  ) => {
+    if (!path.startsWith('proposal:')) {
+      navigate(path);
+      return;
+    }
+
+    const proposalId = Number(path.slice('proposal:'.length));
+    setResolvingId(notification.id);
+    setErrorMessage('');
+
+    try {
+      const result = await getProposal(proposalId);
+
+      if (result.success) {
+        navigate(`/posts/${result.data.postId}`);
+        return;
+      }
+
+      setErrorMessage(result.error.message);
+    } catch {
+      setErrorMessage('제안 정보를 불러오지 못했습니다.');
+    } finally {
+      setResolvingId(null);
+    }
+  };
 
   const unreadCount = useMemo(
     () => notifications.filter((notification) => !getIsRead(notification)).length,
@@ -271,14 +324,26 @@ function NotificationsPage() {
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-2">
-                  {referencePath && (
-                    <Link
-                      to={referencePath}
-                      className="rounded-full border border-[#E7DCD1] px-4 py-2 text-xs font-bold text-[#6F675F]"
-                    >
-                      관련 화면
-                    </Link>
-                  )}
+                  {referencePath &&
+                    (referencePath.startsWith('proposal:') ? (
+                      <button
+                        type="button"
+                        disabled={resolvingId === notification.id}
+                        onClick={() =>
+                          void handleNavigateToReference(notification, referencePath)
+                        }
+                        className="rounded-full border border-[#E7DCD1] px-4 py-2 text-xs font-bold text-[#6F675F] disabled:cursor-not-allowed disabled:text-[#B0A59A]"
+                      >
+                        {resolvingId === notification.id ? '이동 중...' : '관련 화면'}
+                      </button>
+                    ) : (
+                      <Link
+                        to={referencePath}
+                        className="rounded-full border border-[#E7DCD1] px-4 py-2 text-xs font-bold text-[#6F675F]"
+                      >
+                        관련 화면
+                      </Link>
+                    ))}
                   <button
                     type="button"
                     disabled={isRead || processingId === notification.id}

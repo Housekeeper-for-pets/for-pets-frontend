@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -55,6 +55,10 @@ const getProposalActionMessage = (actionLabel: string) =>
 function MyActivityPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedTab = getActivityTab(searchParams.get('tab'));
+  // 알림에서 ?requestId=N으로 진입하면 해당 카드로 스크롤 + 강조합니다.
+  const focusRequestIdRaw = searchParams.get('requestId');
+  const focusRequestId = focusRequestIdRaw ? Number(focusRequestIdRaw) : null;
+  const focusedCardRef = useRef<HTMLDivElement | null>(null);
   const [sentRequests, setSentRequests] = useState<CareRequest[]>([]);
   const [receivedRequests, setReceivedRequests] = useState<CareRequest[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -148,6 +152,16 @@ function MyActivityPage() {
 
     return () => window.clearTimeout(timerId);
   }, []);
+
+  // 로딩이 끝나면 ?requestId=N 카드로 스크롤합니다.
+  useEffect(() => {
+    if (isLoading || !focusRequestId || !focusedCardRef.current) return;
+    focusedCardRef.current.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, focusRequestId, receivedRequests.length]);
 
   const updateCareRequest = (updatedRequest: CareRequest) => {
     setSentRequests((prevRequests) =>
@@ -307,6 +321,12 @@ function MyActivityPage() {
             요청/제안 요약으로
           </button>
 
+          {focusRequestId && selectedTab === 'received' && (
+            <p className="rounded-2xl bg-[#FFF7F2] px-4 py-3 text-sm font-medium text-[#B44727]">
+              알림에서 진입한 돌봄 요청 #{focusRequestId} 으로 이동했습니다.
+            </p>
+          )}
+
           {selectedTab === 'sent' && (
             <ActivitySection title="보낸 돌봄 요청" count={sentRequests.length}>
               {sentRequests.length === 0 && <EmptyMessage text="보낸 돌봄 요청이 없습니다." />}
@@ -348,48 +368,60 @@ function MyActivityPage() {
               {!receivedError && receivedRequests.length === 0 && (
                 <EmptyMessage text="받은 돌봄 요청이 없습니다." />
               )}
-              {receivedRequests.map((request) => (
-                <CareRequestCard
-                  key={`received-${request.id}`}
-                  request={request}
-                  actionArea={
-                    request.status === 'PENDING' && (
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          disabled={actionKey === `accept-${request.id}`}
-                          className="rounded-2xl bg-[#2A2622] px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
-                          onClick={() =>
-                            void handleCareRequestAction(
-                              request.id,
-                              'accept',
-                              '수락',
-                              acceptCareRequest,
-                            )
-                          }
-                        >
-                          수락
-                        </button>
-                        <button
-                          type="button"
-                          disabled={actionKey === `reject-${request.id}`}
-                          className="rounded-2xl bg-[#FFF0EA] px-4 py-3 text-sm font-bold text-[#B44727] disabled:opacity-60"
-                          onClick={() =>
-                            void handleCareRequestAction(
-                              request.id,
-                              'reject',
-                              '거절',
-                              rejectCareRequest,
-                            )
-                          }
-                        >
-                          거절
-                        </button>
-                      </div>
-                    )
-                  }
-                />
-              ))}
+              {receivedRequests.map((request) => {
+                const isFocused = focusRequestId === Number(request.id);
+                return (
+                  <div
+                    key={`received-${request.id}`}
+                    ref={isFocused ? focusedCardRef : null}
+                    className={
+                      isFocused
+                        ? 'rounded-2xl ring-4 ring-[#E26B4A] ring-offset-2 ring-offset-[#FAF6F1] transition'
+                        : ''
+                    }
+                  >
+                    <CareRequestCard
+                      request={request}
+                      actionArea={
+                        request.status === 'PENDING' && (
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              disabled={actionKey === `accept-${request.id}`}
+                              className="rounded-2xl bg-[#2A2622] px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
+                              onClick={() =>
+                                void handleCareRequestAction(
+                                  request.id,
+                                  'accept',
+                                  '수락',
+                                  acceptCareRequest,
+                                )
+                              }
+                            >
+                              수락
+                            </button>
+                            <button
+                              type="button"
+                              disabled={actionKey === `reject-${request.id}`}
+                              className="rounded-2xl bg-[#FFF0EA] px-4 py-3 text-sm font-bold text-[#B44727] disabled:opacity-60"
+                              onClick={() =>
+                                void handleCareRequestAction(
+                                  request.id,
+                                  'reject',
+                                  '거절',
+                                  rejectCareRequest,
+                                )
+                              }
+                            >
+                              거절
+                            </button>
+                          </div>
+                        )
+                      }
+                    />
+                  </div>
+                );
+              })}
             </ActivitySection>
           )}
 

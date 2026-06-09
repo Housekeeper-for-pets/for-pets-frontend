@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { createCareRequest, getMyPets } from '../api';
-import type { CareRequestCreateRequest, CareType, Pet, TimeSlotRequest } from '../types';
+import { createCareRequest, getMyPets, getSitterProfile } from '../api';
+import type {
+  CareRequestCreateRequest,
+  CareType,
+  Pet,
+  SitterProfile,
+  TimeSlotRequest,
+} from '../types';
 
 const initialTimeSlot: TimeSlotRequest = {
   careDate: '',
@@ -31,33 +37,70 @@ function CareRequestCreatePage() {
   const { sitterId } = useParams<{ sitterId: string }>();
   const navigate = useNavigate();
   const [pets, setPets] = useState<Pet[]>([]);
+  const [sitter, setSitter] = useState<SitterProfile | null>(null);
+  const [sitterError, setSitterError] = useState('');
   const [form, setForm] = useState<CareRequestCreateRequest>(initialForm);
   const [isLoadingPets, setIsLoadingPets] = useState(true);
+  const [isLoadingSitter, setIsLoadingSitter] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  // 요청에 포함할 수 있는 내 반려동물 목록을 불러옵니다.
+  // 요청에 포함할 수 있는 내 반려동물 목록 + 시터 프로필(예약 가능 여부 확인용)을 함께 불러옵니다.
   useEffect(() => {
-    const fetchPets = async () => {
-      try {
-        const result = await getMyPets();
+    const fetchInitial = async () => {
+      const fetchPets = async () => {
+        try {
+          const result = await getMyPets();
 
-        if (result.success) {
-          setPets(result.data);
+          if (result.success) {
+            setPets(result.data);
+            return;
+          }
+
+          setErrorMessage(result.error.message);
+        } catch {
+          setErrorMessage('반려동물 목록을 불러오지 못했습니다.');
+        } finally {
+          setIsLoadingPets(false);
+        }
+      };
+
+      const fetchSitter = async () => {
+        if (!sitterId) {
+          setSitterError('시터 ID가 올바르지 않습니다.');
+          setIsLoadingSitter(false);
           return;
         }
 
-        setErrorMessage(result.error.message);
-      } catch {
-        setErrorMessage('반려동물 목록을 불러오지 못했습니다.');
-      } finally {
-        setIsLoadingPets(false);
-      }
+        try {
+          const result = await getSitterProfile(Number(sitterId));
+
+          if (result.success) {
+            setSitter(result.data);
+            return;
+          }
+
+          setSitterError(result.error.message);
+        } catch {
+          setSitterError('시터 정보를 불러오지 못했습니다.');
+        } finally {
+          setIsLoadingSitter(false);
+        }
+      };
+
+      await Promise.all([fetchPets(), fetchSitter()]);
     };
 
-    void fetchPets();
-  }, []);
+    void fetchInitial();
+    // sitterId 변경 시 다시 조회
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sitterId]);
+
+  // 시터의 예약 가능 여부 판단 — 비활성 상태이거나 미승인 시터는 요청 작성 불가
+  const isSitterBlocked =
+    Boolean(sitter) &&
+    (sitter?.status === 'NON_RESERVABLE' || sitter?.approvalStatus !== 'APPROVED');
 
   // 반려동물 체크박스 선택 상태를 요청 petIds에 반영합니다.
   const togglePet = (petId: number) => {
@@ -172,6 +215,78 @@ function CareRequestCreatePage() {
       setIsSubmitting(false);
     }
   };
+
+  // 시터 정보 로딩 중 — 안내 화면
+  if (isLoadingSitter) {
+    return (
+      <main className="mx-auto max-w-5xl px-6 py-8">
+        <p className="rounded-2xl bg-white p-5 text-sm text-[#6F675F] shadow-sm">
+          시터 정보를 확인하는 중입니다.
+        </p>
+      </main>
+    );
+  }
+
+  // 시터 조회 실패 — 차단 화면
+  if (sitterError || !sitter) {
+    return (
+      <main className="mx-auto max-w-5xl px-6 py-8">
+        <section className="rounded-2xl border border-[#E7DCD1] bg-[#FFF0EA] p-6 shadow-sm">
+          <p className="text-sm font-bold text-[#B44727]">CARE REQUEST</p>
+          <h1 className="mt-3 text-3xl font-bold text-[#2A2622]">
+            요청을 작성할 수 없습니다
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-[#6F675F]">
+            {sitterError || '시터 정보를 찾을 수 없습니다.'}
+          </p>
+          <Link
+            to="/sitters"
+            className="mt-5 inline-block rounded-2xl border border-[#E7DCD1] bg-white px-4 py-2 text-sm font-bold text-[#6F675F]"
+          >
+            시터 목록으로
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
+  // 예약 불가 시터 — 폼 대신 안내 화면을 보여주고 작성 자체를 차단합니다.
+  if (isSitterBlocked) {
+    const blockedReason =
+      sitter.status === 'NON_RESERVABLE'
+        ? '현재 예약 불가 상태인 시터입니다. 시터가 예약 가능 상태로 전환되면 다시 요청할 수 있습니다.'
+        : '아직 관리자 승인이 완료되지 않은 시터입니다. 승인이 완료된 후에만 요청을 보낼 수 있습니다.';
+
+    return (
+      <main className="mx-auto max-w-5xl px-6 py-8">
+        <section className="rounded-2xl border border-[#E7DCD1] bg-[#FFF0EA] p-6 shadow-sm">
+          <p className="text-sm font-bold text-[#B44727]">UNAVAILABLE</p>
+          <h1 className="mt-3 text-3xl font-bold text-[#2A2622]">
+            현재 예약 불가 시터입니다
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-[#6F675F]">{blockedReason}</p>
+          <p className="mt-2 text-sm leading-6 text-[#6F675F]">
+            요청을 작성할 수 없습니다. 다른 시터를 찾아보시거나 잠시 후 다시 확인해
+            주세요.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Link
+              to={`/sitters/${sitterId}`}
+              className="rounded-2xl border border-[#E7DCD1] bg-white px-4 py-2 text-sm font-bold text-[#6F675F]"
+            >
+              시터 상세로
+            </Link>
+            <Link
+              to="/sitters"
+              className="rounded-2xl bg-[#E26B4A] px-4 py-2 text-sm font-bold text-white"
+            >
+              다른 시터 찾기
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-8">
