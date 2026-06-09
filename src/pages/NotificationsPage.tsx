@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   getMyInfo,
+  getMyReservations,
   getNotifications,
   getProposal,
   markNotificationAsRead,
@@ -49,8 +50,10 @@ const getReferencePath = (notification: Notification) => {
       return '/activity?tab=proposals';
     case 'MATCHING_CONFIRMED':
       // 제안/요청 수락으로 새 예약이 생성된 경우 — 생성된 예약 상세로 바로 이동
+      // 백엔드가 referenceId를 reservationId가 아닌 proposalId/careRequestId로
+      // 내려주므로 클릭 시 내 예약 중 sourceId가 일치하는 예약을 찾아 이동합니다.
       return notification.referenceId
-        ? `/reservations/${notification.referenceId}`
+        ? `matching:${notification.referenceId}`
         : '/reservations';
     case 'PAYMENT_COMPLETED':
       // 결제 완료 — 해당 예약 상세로 이동 (결제 내역 페이지 아님)
@@ -111,34 +114,70 @@ function NotificationsPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [streamMessage, setStreamMessage] = useState('');
 
-  // 제안 sentinel 경로를 받으면 Proposal을 조회해 실제 Post 경로로 이동합니다.
+  // sentinel 경로를 받으면 부가 조회로 실제 목적지를 얻어 이동합니다.
+  //   proposal:{proposalId} → Proposal 조회 → /posts/{postId}
+  //   matching:{sourceId}   → 내 예약 조회 → sourceId가 일치하는 예약의 /reservations/{id}
   const handleNavigateToReference = async (
     notification: Notification,
     path: string,
   ) => {
-    if (!path.startsWith('proposal:')) {
-      navigate(path);
+    if (path.startsWith('proposal:')) {
+      const proposalId = Number(path.slice('proposal:'.length));
+      setResolvingId(notification.id);
+      setErrorMessage('');
+
+      try {
+        const result = await getProposal(proposalId);
+
+        if (result.success) {
+          navigate(`/posts/${result.data.postId}`);
+          return;
+        }
+
+        setErrorMessage(result.error.message);
+      } catch {
+        setErrorMessage('제안 정보를 불러오지 못했습니다.');
+      } finally {
+        setResolvingId(null);
+      }
       return;
     }
 
-    const proposalId = Number(path.slice('proposal:'.length));
-    setResolvingId(notification.id);
-    setErrorMessage('');
+    if (path.startsWith('matching:')) {
+      const sourceId = Number(path.slice('matching:'.length));
+      setResolvingId(notification.id);
+      setErrorMessage('');
 
-    try {
-      const result = await getProposal(proposalId);
+      try {
+        // 내 예약 목록에서 source(PROPOSAL/CARE_REQUEST) 무관하게 sourceId 일치 항목 탐색
+        const result = await getMyReservations();
 
-      if (result.success) {
-        navigate(`/posts/${result.data.postId}`);
-        return;
+        if (result.success) {
+          const matched = result.data.find(
+            (reservation) => Number(reservation.sourceId) === sourceId,
+          );
+
+          if (matched) {
+            navigate(`/reservations/${matched.id}`);
+            return;
+          }
+
+          // 못 찾으면 안전하게 예약 목록으로 이동
+          setErrorMessage('연결된 예약을 찾을 수 없어 예약 목록으로 이동합니다.');
+          navigate('/reservations');
+          return;
+        }
+
+        setErrorMessage(result.error.message);
+      } catch {
+        setErrorMessage('예약 정보를 불러오지 못했습니다.');
+      } finally {
+        setResolvingId(null);
       }
-
-      setErrorMessage(result.error.message);
-    } catch {
-      setErrorMessage('제안 정보를 불러오지 못했습니다.');
-    } finally {
-      setResolvingId(null);
+      return;
     }
+
+    navigate(path);
   };
 
   const unreadCount = useMemo(
@@ -325,7 +364,8 @@ function NotificationsPage() {
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-2">
                   {referencePath &&
-                    (referencePath.startsWith('proposal:') ? (
+                    (referencePath.startsWith('proposal:') ||
+                    referencePath.startsWith('matching:') ? (
                       <button
                         type="button"
                         disabled={resolvingId === notification.id}
