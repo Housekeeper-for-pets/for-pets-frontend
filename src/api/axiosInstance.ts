@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { clearTokens, getAccessToken, getRefreshToken, saveTokens } from './tokenStorage';
+import { API_BASE_URL } from './baseUrls';
 import type { ApiResponse, TokenResponse } from '../types';
 
 interface RetryableRequestConfig extends InternalAxiosRequestConfig {
@@ -15,7 +16,7 @@ const isApiResponse = (data: unknown): data is ApiResponse<unknown> =>
 
 // 백엔드 API 호출에 공통으로 사용할 axios 인스턴스입니다.
 export const axiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -68,7 +69,7 @@ axiosInstance.interceptors.response.use(
         '/auth/reissue',
         { refreshToken },
         {
-          baseURL: '/api',
+          baseURL: API_BASE_URL,
           headers: {
             'Content-Type': 'application/json',
           },

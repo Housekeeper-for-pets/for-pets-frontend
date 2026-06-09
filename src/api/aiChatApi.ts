@@ -1,4 +1,5 @@
 import { axiosInstance } from './axiosInstance';
+import { buildApiUrl } from './baseUrls';
 import { getAccessToken } from './tokenStorage';
 import type {
   AiChatRequest,
@@ -102,7 +103,7 @@ export const streamAiChatMessage = async (
     headers.Authorization = `Bearer ${accessToken}`;
   }
 
-  const response = await fetch('/api/ai/chat/stream', {
+  const response = await fetch(buildApiUrl('/ai/chat/stream'), {
     method: 'POST',
     headers,
     body: JSON.stringify(request),

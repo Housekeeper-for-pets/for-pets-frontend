@@ -7,6 +7,7 @@ import {
   getChatRooms,
   leaveChatRoom,
 } from '../api';
+import { buildWebSocketUrl } from '../api/baseUrls';
 import { getAccessToken } from '../api/tokenStorage';
 import type {
   ChatMessageBroadcast,
@@ -16,11 +17,6 @@ import type {
 
 const inputClassName =
     'w-full rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm text-[#2A2622] outline-none transition placeholder:text-[#B0A59A] focus:border-[#E26B4A] focus:ring-4 focus:ring-[#F7D8CC]';
-
-const buildWebSocketUrl = () => {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${protocol}//${window.location.host}/ws/chat`;
-};
 
 // [수정 1] parseStompBody: split('\n\n') → indexOf('\n\n')
 // split은 바디 안에 \n\n이 포함된 JSON이 오면 잘못 분리됨
@@ -302,7 +298,7 @@ function ChatPage() {
       return;
     }
 
-    const socket = new WebSocket(buildWebSocketUrl());
+    const socket = new WebSocket(buildWebSocketUrl('/ws/chat'));
     socketRef.current = socket;
     subscribedRoomIdsRef.current = new Set(); // 연결마다 구독 목록 초기화
     setSocketStatus('연결 중');

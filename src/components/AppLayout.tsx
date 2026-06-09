@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { getMyInfo, getMyPets, getUnreadNotificationCount } from '../api';
+import { buildApiUrl } from '../api/baseUrls';
 import { useAuth } from '../hooks/useAuth';
 import type { Member, Pet } from '../types';
 import BrandLogo from './BrandLogo';
@@ -114,7 +115,7 @@ function AppLayout() {
     void fetchUnreadCount();
 
     const eventSource = new EventSource(
-      `/api/notifications/stream?userId=${member.id}`,
+      buildApiUrl(`/notifications/stream?userId=${member.id}`),
     );
     const handleServerNotification = () => {
       void fetchUnreadCount();
