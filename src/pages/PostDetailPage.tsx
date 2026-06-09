@@ -126,8 +126,8 @@ function PostDetailPage() {
 
   // 제안 등록 전 필수 입력값을 확인합니다.
   const validateProposal = () => {
-    if (proposalForm.proposedPrice <= 0) {
-      return '제안 금액은 0보다 커야 합니다.';
+    if (proposalForm.proposedPrice < 5000) {
+      return '제안 금액은 5,000원 이상이어야 합니다.';
     }
 
     return '';
@@ -417,12 +417,12 @@ function PostDetailPage() {
           {isAuthenticated && !isOwner && (
           <form className="mt-5 space-y-4" onSubmit={handleProposalSubmit}>
             <label className="block" htmlFor="proposedPrice">
-              <span className="text-sm font-bold text-[#2A2622]">제안 금액</span>
+              <span className="text-sm font-bold text-[#2A2622]">제안 금액 (최소 5,000원)</span>
               <input
                 id="proposedPrice"
                 className={`mt-2 ${inputClassName}`}
                 type="number"
-                min={1}
+                min={5000}
                 value={proposalForm.proposedPrice}
                 onChange={(event) =>
                   setProposalForm((prevForm) => ({

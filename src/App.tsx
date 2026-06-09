@@ -3,11 +3,13 @@ import AppLayout from './components/AppLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminPage from './pages/AdminPage';
 import AdminCancellationsPage from './pages/AdminCancellationsPage';
+import AdminCouponsPage from './pages/AdminCouponsPage';
 import AdminSitterDetailPage from './pages/AdminSitterDetailPage';
 import AdminSittersPage from './pages/AdminSittersPage';
 import AiSitterChatPage from './pages/AiSitterChatPage';
 import CareRequestCreatePage from './pages/CareRequestCreatePage';
 import ChatPage from './pages/ChatPage';
+import EventsPage from './pages/EventsPage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import MyActivityPage from './pages/MyActivityPage';
@@ -40,6 +42,9 @@ function App() {
         <Route path="/posts" element={<PostsPage />} />
         <Route path="/posts/:postId" element={<PostDetailPage />} />
         <Route element={<ProtectedRoute />}>
+          <Route path="/events" element={<EventsPage />} />
+          <Route path="/admin/coupons" element={<AdminCouponsPage />} />
+          {/* === 기존 ProtectedRoute 항목 ↓ === */}
           <Route path="/me" element={<MyProfilePage />} />
           <Route path="/ai-chat" element={<AiSitterChatPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />

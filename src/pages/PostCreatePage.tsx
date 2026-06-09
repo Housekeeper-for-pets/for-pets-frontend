@@ -165,7 +165,7 @@ function PostCreatePage() {
     if (!form.title.trim()) return '공고 제목을 입력해 주세요.';
     if (!form.content.trim()) return '공고 내용을 입력해 주세요.';
     if (form.petIds.length === 0) return '반려동물을 1마리 이상 선택해 주세요.';
-    if (form.budgetAmount <= 0) return '희망 예산은 0보다 커야 합니다.';
+    if (form.budgetAmount < 5000) return '희망 예산은 5,000원 이상이어야 합니다.';
 
     const hasEmptyTimeSlot = form.timeSlots.some(
       (timeSlot) => !timeSlot.careDate || !timeSlot.startTime || !timeSlot.endTime,
@@ -290,12 +290,12 @@ function PostCreatePage() {
             </label>
 
             <label className="block" htmlFor="budgetAmount">
-              <span className="text-sm font-bold text-[#2A2622]">희망 예산</span>
+              <span className="text-sm font-bold text-[#2A2622]">희망 예산 (최소 5,000원)</span>
               <input
                 id="budgetAmount"
                 className={`mt-3 ${inputClassName}`}
                 type="number"
-                min={1}
+                min={5000}
                 value={form.budgetAmount}
                 onChange={(event) =>
                   setForm((prevForm) => ({

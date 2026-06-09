@@ -57,7 +57,7 @@ function AdminPage() {
         </p>
       )}
 
-      <section className="mt-6 grid gap-4 md:grid-cols-2">
+      <section className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <AdminHubCard
           to="/admin/sitters"
           label="SITTER APPROVAL"
@@ -72,6 +72,12 @@ function AdminPage() {
           count={isLoading ? null : cancelCount}
           description="환불·정산이 필요한 취소 요청을 처리합니다."
         />
+        <AdminHubCard
+          to="/admin/coupons"
+          label="COUPONS"
+          title="쿠폰 발급"
+          description="신규 이벤트 쿠폰을 생성하고 잘못 발급된 유저 쿠폰을 회수합니다."
+        />
       </section>
     </main>
   );
@@ -81,7 +87,8 @@ interface AdminHubCardProps {
   to: string;
   label: string;
   title: string;
-  count: number | null;
+  // 카운트 배지가 없는 카드는 undefined를 넘기고, 로딩 중이면 null을 넘깁니다.
+  count?: number | null;
   description: string;
 }
 
@@ -92,11 +99,13 @@ function AdminHubCard({ to, label, title, count, description }: AdminHubCardProp
       className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm transition hover:border-[#E26B4A]"
     >
       <p className="text-sm font-bold text-[#E26B4A]">{label}</p>
-      <div className="mt-3 flex items-end justify-between">
+      <div className="mt-3 flex items-end justify-between gap-3">
         <h2 className="text-2xl font-bold text-[#2A2622]">{title}</h2>
-        <span className="rounded-full bg-[#FFF0EA] px-3 py-1 text-xs font-bold text-[#B44727]">
-          {count === null ? '불러오는 중' : `${count}건 대기`}
-        </span>
+        {count !== undefined && (
+          <span className="rounded-full bg-[#FFF0EA] px-3 py-1 text-xs font-bold text-[#B44727]">
+            {count === null ? '불러오는 중' : `${count}건 대기`}
+          </span>
+        )}
       </div>
       <p className="mt-3 text-sm leading-6 text-[#6F675F]">{description}</p>
       <p className="mt-5 text-sm font-bold text-[#2A2622]">바로 이동 →</p>

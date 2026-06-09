@@ -456,10 +456,31 @@ function ReservationDetailPage() {
       return;
     }
 
-    await runReservationAction(
-      () => cancelReservation(reservation.id, cancelForm),
-      '예약이 취소되었습니다.',
-    );
+    // 응답 상태에 따라 메시지를 동적으로 결정합니다.
+    // (불가피한 사유로 취소를 요청하면 CANCEL_REQUESTED, 그 외엔 곧바로 CANCELED)
+    setErrorMessage('');
+    setActionMessage('');
+    setIsUpdating(true);
+
+    try {
+      const result = await cancelReservation(reservation.id, cancelForm);
+
+      if (result.success && result.data) {
+        setReservation(result.data);
+        setActionMessage(
+          result.data.status === 'CANCEL_REQUESTED'
+            ? '취소 승인이 대기중입니다.'
+            : '예약이 취소되었습니다.',
+        );
+        return;
+      }
+
+      setErrorMessage(result.error?.message ?? '예약 취소에 실패했습니다.');
+    } catch {
+      setErrorMessage('예약 취소 중 문제가 발생했습니다.');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   if (isLoading) {

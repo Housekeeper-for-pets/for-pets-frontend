@@ -164,8 +164,8 @@ function CareRequestCreatePage() {
       return '요청할 반려동물을 1마리 이상 선택해 주세요.';
     }
 
-    if (!form.requestPrice || form.requestPrice <= 0) {
-      return '요청 금액을 1원 이상 입력해 주세요.';
+    if (!form.requestPrice || form.requestPrice < 5000) {
+      return '요청 금액은 5,000원 이상이어야 합니다.';
     }
 
     const hasEmptyTimeSlot = form.timeSlots.some(
@@ -394,9 +394,9 @@ function CareRequestCreatePage() {
               id="requestPrice"
               className={`mt-3 ${inputClassName}`}
               type="number"
-              min={1}
+              min={5000}
               step={1}
-              placeholder="예: 80000"
+              placeholder="예: 80000 (최소 5,000원)"
               value={form.requestPrice || ''}
               onChange={(event) =>
                 setForm((prevForm) => ({
