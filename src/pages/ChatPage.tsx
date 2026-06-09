@@ -59,6 +59,15 @@ const sortRooms = (items: ChatRoomListItem[]) =>
       return b.chatRoomId - a.chatRoomId;
     });
 
+const formatTime = (isoString: string): string => {
+  const date = new Date(isoString);
+  const hours = date.getHours();
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const period = hours < 12 ? '오전' : '오후';
+  const displayHours = hours % 12 === 0 ? 12 : hours % 12;
+  return `${period} ${displayHours}:${minutes}`;
+};
+
 // [수정 4] 재연결 설정 상수
 // 최대 5회, 지수 백오프(1s → 2s → 4s → 8s → 16s), 최대 30s
 const RECONNECT_BASE_DELAY_MS = 1000;
@@ -128,8 +137,8 @@ function ChatPage() {
     });
   };
 
-  const fetchRooms = useCallback(async () => {
-    setErrorMessage('');
+  const fetchRooms = useCallback(async (isInitialLoad = false) => {
+    if (isInitialLoad) setErrorMessage('');
     const targetChatRoomId = Number(searchParams.get('roomId'));
     const routeStateRoom = (location.state as ChatRouteState | null)?.selectedRoom;
 
@@ -599,9 +608,6 @@ function ChatPage() {
                   </div>
 
                   <div className="mt-5 grid max-h-[520px] min-h-[360px] content-start gap-3 overflow-y-auto rounded-2xl bg-[#FAF6F1] p-4">
-                    {isLoadingMessages && (
-                        <p className="text-sm text-[#6F675F]">메시지를 불러오는 중입니다.</p>
-                    )}
                     {!isLoadingMessages && messages.length === 0 && (
                         <p className="text-sm text-[#6F675F]">아직 메시지가 없습니다.</p>
                     )}
@@ -643,16 +649,26 @@ function ChatPage() {
                               )}
                               <div
                                   className={[
-                                    'max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-6',
-                                    message.isMine
-                                        ? 'ml-auto bg-[#E26B4A] text-white'
-                                        : 'bg-white text-[#2A2622]',
+                                    'flex items-end gap-1',
+                                    message.isMine ? 'flex-row-reverse' : 'flex-row',
                                   ].join(' ')}
                               >
-                                <p className="text-xs font-bold opacity-80">
-                                  {message.senderNickname}
-                                </p>
-                                <p className="mt-1">{message.content}</p>
+                                <div
+                                    className={[
+                                      'max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-6',
+                                      message.isMine
+                                          ? 'bg-[#E26B4A] text-white'
+                                          : 'bg-white text-[#2A2622]',
+                                    ].join(' ')}
+                                >
+                                  <p className="text-xs font-bold opacity-80">
+                                    {message.senderNickname}
+                                  </p>
+                                  <p className="mt-1">{message.content}</p>
+                                </div>
+                                <span className="shrink-0 text-[10px] text-[#B0A59A]">
+                                  {formatTime(message.createdAt)}
+                                </span>
                               </div>
                             </div>
                         );
