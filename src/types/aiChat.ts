@@ -9,6 +9,7 @@ import type {
 
 export interface AiChatRequest {
   message: string;
+  sessionId?: string | null;
 }
 
 export type RagSourceType = 'REVIEW';
@@ -53,6 +54,7 @@ export interface RecommendedSitter {
 }
 
 export interface AiChatResponse {
+  sessionId?: string | null;
   answer: string;
   recommendedSitters: RecommendedSitter[];
   sources: RagSearchResult[];
