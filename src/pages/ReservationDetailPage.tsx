@@ -91,7 +91,7 @@ const getPayableRoles = (
   reservation: Reservation,
   currentMember: Member | null,
 ): PaymentRole[] => {
-  if (!currentMember || reservation.status !== 'PENDING') {
+  if (!currentMember || !reservation.payable) {
     return [];
   }
 
@@ -689,7 +689,7 @@ function ReservationDetailPage() {
               ))
             ) : (
               <p className="rounded-2xl bg-[#FAF6F1] px-4 py-3 text-sm font-semibold text-[#6F675F]">
-                {reservation.status === 'PENDING'
+                {reservation.payable
                   ? '현재 계정으로 진행할 결제가 없습니다.'
                   : '결제 가능한 예약 상태가 아닙니다.'}
               </p>
