@@ -1,8 +1,11 @@
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, '');
 const trimLeadingSlash = (value: string) => value.replace(/^\/+/, '');
+const defaultApiBaseUrl = import.meta.env.PROD
+  ? 'https://api.forpetscare.uk/api'
+  : '/api';
 
 export const API_BASE_URL = trimTrailingSlash(
-  import.meta.env.VITE_API_BASE_URL ?? '/api',
+  import.meta.env.VITE_API_BASE_URL ?? defaultApiBaseUrl,
 );
 
 export const buildApiUrl = (path: string) =>
