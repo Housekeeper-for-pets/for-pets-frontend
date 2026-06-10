@@ -19,12 +19,14 @@ interface ChatMessage {
   content: string;
   recommendedSitters?: RecommendedSitter[];
   sources?: RagSearchResult[];
+  isStreaming?: boolean;
 }
 
 const promptSuggestions = [
-  '마포구에서 소형견 가능한 시터 추천해줘',
-  '분리불안 있는 말티즈를 잘 보는 시터 찾아줘',
-  '고양이 위탁 돌봄 가능한 시터 있을까?',
+  '분리불안 있는 말티즈를 차분하게 돌봐줄 시터 추천해줘',
+  '그중에서 가격이 낮은 시터로 다시 알려줘',
+  '노령견을 천천히 산책시켜주는 시터 찾아줘',
+  '방금 추천한 시터들 중 소형견 경험이 많은 사람으로 골라줘',
 ];
 
 const initialMessages: ChatMessage[] = [
@@ -42,6 +44,9 @@ const AI_PENDING_NOTICE_DELAY_MS = 7000;
 const formatPrice = (value: number) => `${value.toLocaleString('ko-KR')}원`;
 
 const formatSourceScore = (score: number) => `${Math.round(score * 100)}%`;
+
+const formatSessionId = (sessionId: string) =>
+  sessionId.length > 12 ? `${sessionId.slice(0, 8)}...` : sessionId;
 
 const sourceTypeLabels: Record<RagSearchResult['sourceType'], string> = {
   REVIEW: '보호자 리뷰',
@@ -150,6 +155,9 @@ function AiSitterChatPage() {
   const recommendationCount = latestRecommendedSitters.length;
   const currentRecommendationNumber =
     recommendationCount > 0 ? currentRecommendationIndex + 1 : 0;
+  const sessionLabel = chatSessionId
+    ? `Session: ${formatSessionId(chatSessionId)}`
+    : '새 대화 세션 준비';
 
   useEffect(() => {
     setCurrentRecommendationIndex(0);
@@ -226,6 +234,7 @@ function AiSitterChatPage() {
             content: '',
             recommendedSitters: [],
             sources: [],
+            isStreaming: false,
             ...nextMessage,
           },
         ];
@@ -260,7 +269,7 @@ function AiSitterChatPage() {
               if (existingMessage) {
                 return prevMessages.map((item) =>
                   item.id === assistantMessageId
-                    ? { ...item, content: nextContent }
+                    ? { ...item, content: nextContent, isStreaming: true }
                     : item,
                 );
               }
@@ -273,6 +282,7 @@ function AiSitterChatPage() {
                   content: nextContent,
                   recommendedSitters: [],
                   sources: [],
+                  isStreaming: true,
                 },
               ];
             });
@@ -306,6 +316,7 @@ function AiSitterChatPage() {
         content: answer,
         recommendedSitters,
         sources: streamedResponse.sources ?? [],
+        isStreaming: false,
       });
     } catch (error) {
       const nextErrorMessage =
@@ -318,6 +329,7 @@ function AiSitterChatPage() {
       );
       upsertAssistantMessage({
         content: nextErrorMessage,
+        isStreaming: false,
       });
     } finally {
       clearPendingNoticeTimer();
@@ -345,6 +357,19 @@ function AiSitterChatPage() {
             반려동물의 성향과 필요한 돌봄 조건을 자연스럽게 적으면, 백엔드 AI
             추천 결과를 바탕으로 바로 요청할 수 있는 시터를 보여드립니다.
           </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <span className="rounded-full border border-[#E7DCD1] bg-white px-3 py-1.5 text-xs font-black text-[#6F675F] shadow-sm">
+            {chatSessionId ? '대화 세션 유지 중' : '대화 세션 시작 전'}
+          </span>
+          <span className="rounded-full border border-[#E7DCD1] bg-white px-3 py-1.5 text-xs font-black text-[#9B8E82] shadow-sm">
+            {sessionLabel}
+          </span>
+          {isSending && (
+            <span className="rounded-full bg-[#FFF0EA] px-3 py-1.5 text-xs font-black text-[#B85B3D]">
+              실시간 스트리밍 중
+            </span>
+          )}
         </div>
         <Link
           to="/sitters"
@@ -402,6 +427,24 @@ function AiSitterChatPage() {
                       ))}
                     </div>
                   )}
+
+                {chatMessage.role === 'assistant' &&
+                  chatMessage.id !== 'initial' &&
+                  !chatMessage.sources?.length && (
+                    <div className="mt-3 rounded-xl border border-dashed border-[#E3D6C8] bg-white/55 p-3 text-xs font-bold leading-5 text-[#8C8075]">
+                      리뷰 근거가 연결되면 이곳에 출처가 표시됩니다.
+                    </div>
+                  )}
+
+                {chatMessage.role === 'assistant' && chatMessage.isStreaming && (
+                  <div className="mt-3 flex items-center gap-2 text-xs font-black text-[#B85B3D]">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#D96F4F] opacity-60" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-[#D96F4F]" />
+                    </span>
+                    AI가 답변을 실시간으로 작성 중입니다...
+                  </div>
+                )}
               </article>
             ))}
 
@@ -517,6 +560,18 @@ function AiSitterChatPage() {
                 <p className="mt-4 line-clamp-3 text-sm font-medium leading-6 text-[#6F675F]">
                   {currentRecommendedSitter.introduction || '등록된 소개글이 없습니다.'}
                 </p>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="rounded-full bg-[#FFF0EA] px-3 py-1 text-[11px] font-black text-[#B85B3D]">
+                    AI 리뷰 요약 기반
+                  </span>
+                  <span className="rounded-full bg-[#EEF7EA] px-3 py-1 text-[11px] font-black text-[#308047]">
+                    {latestSources.length > 0 ? 'RAG 리뷰 근거 참고' : 'RAG 근거 대기'}
+                  </span>
+                  <span className="rounded-full bg-[#F6EFE7] px-3 py-1 text-[11px] font-black text-[#6F675F]">
+                    실시간 가능 일정 포함
+                  </span>
+                </div>
 
                 <dl className="mt-4 grid grid-cols-2 gap-2 text-xs font-bold text-[#6F675F]">
                   <div className="rounded-xl bg-[#FFFCF8] p-3">
