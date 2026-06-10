@@ -157,12 +157,21 @@ function ChatPage() {
         );
 
         setRooms(nextRooms);
-        setSelectedRoom((prevRoom) =>
-            targetRoom ??
-            (prevRoom && nextRooms.some((room) => room.chatRoomId === prevRoom.chatRoomId)
-                ? prevRoom
-                : null),
-        );
+        setSelectedRoom((prevRoom) => {
+          const next =
+              targetRoom ??
+              (prevRoom && nextRooms.some((room) => room.chatRoomId === prevRoom.chatRoomId)
+                  ? prevRoom
+                  : null);
+
+          // 같은 채팅방이면 이전 참조 유지 → selectedRoom 변경으로 인식 안 됨
+          // → useEffect([selectedRoom]) 미트리거 → 5초 폴링 시 스크롤 버그 방지
+          if (next !== null && prevRoom !== null && next.chatRoomId === prevRoom.chatRoomId) {
+            return prevRoom;
+          }
+
+          return next;
+        });
 
         if (targetRoom) {
           setSearchParams({}, { replace: true });
