@@ -413,6 +413,7 @@ export const careTypeLabels: Record<CareType, string> = {
 export const postStatusLabels: Record<PostStatus, string> = {
   OPEN: '모집 중',
   CLOSED: '마감',
+  EXPIRED: '만료됨',
 };
 
 export const careRequestStatusLabels: Record<CareRequestStatus, string> = {
@@ -420,6 +421,7 @@ export const careRequestStatusLabels: Record<CareRequestStatus, string> = {
   ACCEPTED: '수락됨',
   REJECTED: '거절됨',
   CANCELED: '취소됨',
+  EXPIRED: '만료됨',
 };
 
 export const proposalStatusLabels: Record<ProposalStatus, string> = {
@@ -427,6 +429,7 @@ export const proposalStatusLabels: Record<ProposalStatus, string> = {
   ACCEPTED: '수락됨',
   REJECTED: '거절됨',
   WITHDRAWN: '철회됨',
+  EXPIRED: '만료됨',
 };
 
 export const reservationStatusLabels: Record<ReservationStatus, string> = {

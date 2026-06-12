@@ -47,6 +47,12 @@ const notificationEventTypes = [
   'REQUEST_RECEIVED',
   'PROPOSAL_WITHDRAWN',
   'PAYMENT_COMPLETED',
+  'SITTER_PROFILE_APPROVED',
+  'RESERVATION_CANCELED',
+  'RESERVATION_EXPIRED',
+  'CANCEL_REQUESTED',
+  'REQUEST_REJECTED',
+  'REQUEST_ACCEPTED',
 ];
 
 function NavIcon({ name }: { name: NavIconName }) {

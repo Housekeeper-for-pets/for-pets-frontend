@@ -446,7 +446,8 @@ function PetForm({
           label="나이"
           type="number"
           min={0}
-          value={form.age}
+          placeholder="0"
+          value={form.age || ''}
           onChange={(event) => onNumberChange('age', event.target.value)}
         />
 

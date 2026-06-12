@@ -406,7 +406,7 @@ function MyProfilePage() {
             )}
           </article>
 
-          <article className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
+          <article className="flex flex-col self-start rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
             <p className="text-sm font-bold text-[#E26B4A]">PAYMENT & MONEY</p>
             <h2 className="mt-3 text-2xl font-bold text-[#2A2622]">
               결제와 정산
@@ -414,23 +414,23 @@ function MyProfilePage() {
             <p className="mt-2 text-sm leading-6 text-[#6F675F]">
               예약 결제 상태와 시터 정산 내역을 내 계정에서 바로 확인합니다.
             </p>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="mt-5 flex flex-wrap gap-2">
               <Link
                 to="/payments"
-                className="rounded-2xl bg-[#2A2622] px-4 py-3 text-center text-sm font-bold text-white"
+                className="inline-flex items-center justify-center rounded-full bg-[#2A2622] px-4 py-2 text-sm font-bold text-white"
               >
                 결제 내역
               </Link>
               <Link
                 to="/settlements"
-                className="rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-center text-sm font-bold text-[#2A2622]"
+                className="inline-flex items-center justify-center rounded-full border border-[#E7DCD1] bg-white px-4 py-2 text-sm font-bold text-[#2A2622]"
               >
                 정산 내역
               </Link>
             </div>
           </article>
 
-          <aside className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
+          <aside className="self-start rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
             <p className="text-sm font-bold text-[#E26B4A]">DANGER ZONE</p>
             <h2 className="mt-3 text-2xl font-bold text-[#2A2622]">회원 탈퇴</h2>
             <p className="mt-2 text-sm leading-6 text-[#6F675F]">
@@ -440,7 +440,7 @@ function MyProfilePage() {
               type="button"
               disabled={isDeletingAccount}
               onClick={() => void handleDeleteAccount()}
-              className="mt-5 w-full rounded-2xl border border-[#E7DCD1] px-4 py-3 text-sm font-bold text-[#B44727] disabled:cursor-not-allowed disabled:text-[#B0A59A]"
+              className="mt-5 w-fit rounded-full border border-[#E7DCD1] px-4 py-2 text-sm font-bold text-[#B44727] disabled:cursor-not-allowed disabled:text-[#B0A59A]"
             >
               {isDeletingAccount ? '처리 중...' : '회원 탈퇴'}
             </button>

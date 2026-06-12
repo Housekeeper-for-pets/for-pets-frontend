@@ -153,7 +153,7 @@ function MyActivityPage() {
     return () => window.clearTimeout(timerId);
   }, []);
 
-  // 로딩이 끝나면 ?requestId=N 카드로 스크롤합니다.
+  // 로딩이 끝나면 ?requestId=N 카드로 스크롤합니다. (sent/received 양쪽 탭 모두)
   useEffect(() => {
     if (isLoading || !focusRequestId || !focusedCardRef.current) return;
     focusedCardRef.current.scrollIntoView({
@@ -161,7 +161,7 @@ function MyActivityPage() {
       block: 'center',
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, focusRequestId, receivedRequests.length]);
+  }, [isLoading, focusRequestId, receivedRequests.length, sentRequests.length]);
 
   const updateCareRequest = (updatedRequest: CareRequest) => {
     setSentRequests((prevRequests) =>
@@ -321,40 +321,53 @@ function MyActivityPage() {
             요청/제안 요약으로
           </button>
 
-          {focusRequestId && selectedTab === 'received' && (
-            <p className="rounded-2xl bg-[#FFF7F2] px-4 py-3 text-sm font-medium text-[#B44727]">
-              알림에서 진입한 돌봄 요청 #{focusRequestId} 으로 이동했습니다.
-            </p>
-          )}
+          {focusRequestId &&
+            (selectedTab === 'received' || selectedTab === 'sent') && (
+              <p className="rounded-2xl bg-[#FFF7F2] px-4 py-3 text-sm font-medium text-[#B44727]">
+                알림에서 진입한 돌봄 요청 #{focusRequestId} 으로 이동했습니다.
+              </p>
+            )}
 
           {selectedTab === 'sent' && (
             <ActivitySection title="보낸 돌봄 요청" count={sentRequests.length}>
               {sentRequests.length === 0 && <EmptyMessage text="보낸 돌봄 요청이 없습니다." />}
-              {sentRequests.map((request) => (
-                <CareRequestCard
-                  key={`sent-${request.id}`}
-                  request={request}
-                  actionArea={
-                    request.status === 'PENDING' && (
-                      <button
-                        type="button"
-                        disabled={actionKey === `cancel-${request.id}`}
-                        className="rounded-2xl bg-[#F4E9DE] px-4 py-3 text-sm font-bold text-[#6F675F] disabled:opacity-60"
-                        onClick={() =>
-                          void handleCareRequestAction(
-                            request.id,
-                            'cancel',
-                            '취소',
-                            cancelSentCareRequest,
-                          )
-                        }
-                      >
-                        요청 취소
-                      </button>
-                    )
-                  }
-                />
-              ))}
+              {sentRequests.map((request) => {
+                const isFocused = focusRequestId === Number(request.id);
+                return (
+                  <div
+                    key={`sent-${request.id}`}
+                    ref={isFocused ? focusedCardRef : null}
+                    className={
+                      isFocused
+                        ? 'rounded-2xl ring-4 ring-[#E26B4A] ring-offset-2 ring-offset-[#FAF6F1] transition'
+                        : ''
+                    }
+                  >
+                    <CareRequestCard
+                      request={request}
+                      actionArea={
+                        request.status === 'PENDING' && (
+                          <button
+                            type="button"
+                            disabled={actionKey === `cancel-${request.id}`}
+                            className="rounded-2xl bg-[#F4E9DE] px-4 py-3 text-sm font-bold text-[#6F675F] disabled:opacity-60"
+                            onClick={() =>
+                              void handleCareRequestAction(
+                                request.id,
+                                'cancel',
+                                '취소',
+                                cancelSentCareRequest,
+                              )
+                            }
+                          >
+                            요청 취소
+                          </button>
+                        )
+                      }
+                    />
+                  </div>
+                );
+              })}
             </ActivitySection>
           )}
 
@@ -668,6 +681,12 @@ function ProposalCard({ proposal, actionArea }: ProposalCardProps) {
         </div>
         <div className="flex shrink-0 flex-wrap items-start gap-2">
           {actionArea}
+          <Link
+            to={`/sitters/${proposal.sitterProfileId}`}
+            className="rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm font-bold text-[#6F675F]"
+          >
+            시터 프로필 보기
+          </Link>
           <Link
             to={`/posts/${proposal.postId}`}
             className="rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm font-bold text-[#6F675F]"

@@ -232,6 +232,7 @@ function PostsPage() {
           <option value="">전체 상태</option>
           <option value="OPEN">{postStatusLabels.OPEN}</option>
           <option value="CLOSED">{postStatusLabels.CLOSED}</option>
+          <option value="EXPIRED">{postStatusLabels.EXPIRED}</option>
         </select>
 
         <select

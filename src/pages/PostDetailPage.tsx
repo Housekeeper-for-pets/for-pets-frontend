@@ -33,6 +33,7 @@ const proposalStatusLabels = {
   ACCEPTED: '수락됨',
   REJECTED: '거절됨',
   WITHDRAWN: '철회됨',
+  EXPIRED: '만료됨',
 } as const;
 
 // 공고 상세를 보여주고 시터가 제안을 등록할 수 있는 페이지입니다.
@@ -126,6 +127,10 @@ function PostDetailPage() {
 
   // 제안 등록 전 필수 입력값을 확인합니다.
   const validateProposal = () => {
+    if (!proposalForm.proposedPrice) {
+      return '제안 금액을 입력해 주세요.';
+    }
+
     if (proposalForm.proposedPrice < 5000) {
       return '제안 금액은 5,000원 이상이어야 합니다.';
     }
@@ -390,16 +395,29 @@ function PostDetailPage() {
 
           {isAuthenticated && isOwner && (
             <div className="mt-5 grid gap-3">
-              <Link
-                to={`/posts/${post.id}/edit`}
-                className="rounded-2xl bg-[#2A2622] px-5 py-3 text-center text-sm font-bold text-white"
-              >
-                공고 수정
-              </Link>
+              {post.status === 'EXPIRED' ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOwnerActionMessage('');
+                    setOwnerActionErrorMessage('만료된 공고는 수정할 수 없습니다.');
+                  }}
+                  className="rounded-2xl bg-[#B0A59A] px-5 py-3 text-center text-sm font-bold text-white"
+                >
+                  공고 수정
+                </button>
+              ) : (
+                <Link
+                  to={`/posts/${post.id}/edit`}
+                  className="rounded-2xl bg-[#2A2622] px-5 py-3 text-center text-sm font-bold text-white"
+                >
+                  공고 수정
+                </Link>
+              )}
               <button
                 type="button"
                 onClick={handleClosePost}
-                disabled={post.status === 'CLOSED'}
+                disabled={post.status !== 'OPEN'}
                 className="rounded-2xl border border-[#E7DCD1] px-5 py-3 text-sm font-bold text-[#6F675F] disabled:cursor-not-allowed disabled:bg-[#F4E9DE]"
               >
                 공고 마감
@@ -423,7 +441,8 @@ function PostDetailPage() {
                 className={`mt-2 ${inputClassName}`}
                 type="number"
                 min={5000}
-                value={proposalForm.proposedPrice}
+                placeholder="예: 50000 (최소 5,000원)"
+                value={proposalForm.proposedPrice || ''}
                 onChange={(event) =>
                   setProposalForm((prevForm) => ({
                     ...prevForm,

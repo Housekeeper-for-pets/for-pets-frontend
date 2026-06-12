@@ -165,6 +165,7 @@ function PostCreatePage() {
     if (!form.title.trim()) return '공고 제목을 입력해 주세요.';
     if (!form.content.trim()) return '공고 내용을 입력해 주세요.';
     if (form.petIds.length === 0) return '반려동물을 1마리 이상 선택해 주세요.';
+    if (!form.budgetAmount) return '희망 예산을 입력해 주세요.';
     if (form.budgetAmount < 5000) return '희망 예산은 5,000원 이상이어야 합니다.';
 
     const hasEmptyTimeSlot = form.timeSlots.some(
@@ -296,7 +297,8 @@ function PostCreatePage() {
                 className={`mt-3 ${inputClassName}`}
                 type="number"
                 min={5000}
-                value={form.budgetAmount}
+                placeholder="예: 80000 (최소 5,000원)"
+                value={form.budgetAmount || ''}
                 onChange={(event) =>
                   setForm((prevForm) => ({
                     ...prevForm,

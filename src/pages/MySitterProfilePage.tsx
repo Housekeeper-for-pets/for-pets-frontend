@@ -182,6 +182,10 @@ function MySitterProfilePage() {
       return '경력 연수는 0 이상이어야 합니다.';
     }
 
+    if (!profileForm.pricePerHour) {
+      return '시간당 요금을 입력해 주세요.';
+    }
+
     if (profileForm.pricePerHour < 5000) {
       return '시간당 요금은 5,000원 이상이어야 합니다.';
     }
@@ -632,11 +636,12 @@ function MySitterProfilePage() {
                   className={`mt-2 ${inputClassName}`}
                   type="number"
                   min={0}
-                  value={profileForm.experienceYears}
+                  placeholder="0"
+                  value={profileForm.experienceYears || ''}
                   onChange={(event) =>
                     setProfileForm((prevForm) => ({
                       ...prevForm,
-                      experienceYears: Number(event.target.value),
+                      experienceYears: event.target.value === '' ? 0 : Number(event.target.value),
                     }))
                   }
                 />
@@ -649,7 +654,8 @@ function MySitterProfilePage() {
                   className={`mt-2 ${inputClassName}`}
                   type="number"
                   min={5000}
-                  value={profileForm.pricePerHour}
+                  placeholder="예: 15000"
+                  value={profileForm.pricePerHour || ''}
                   onChange={(event) =>
                     setProfileForm((prevForm) => ({
                       ...prevForm,

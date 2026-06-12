@@ -1,6 +1,11 @@
 import type { Id, ISODateTimeString } from './common';
 
-export type ProposalStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN';
+export type ProposalStatus =
+  | 'PENDING'
+  | 'ACCEPTED'
+  | 'REJECTED'
+  | 'WITHDRAWN'
+  | 'EXPIRED';
 
 export interface ProposalRequest {
   proposedPrice: number;

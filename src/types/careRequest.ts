@@ -7,7 +7,12 @@ import type {
 } from './common';
 import type { PetSnapshot } from './pet';
 
-export type CareRequestStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELED';
+export type CareRequestStatus =
+  | 'PENDING'
+  | 'ACCEPTED'
+  | 'REJECTED'
+  | 'CANCELED'
+  | 'EXPIRED';
 
 export interface CareRequestCreateRequest {
   petIds: Id[];

@@ -9,7 +9,7 @@ import type {
 import type { Region } from './member';
 import type { PetSnapshot } from './pet';
 
-export type PostStatus = 'OPEN' | 'CLOSED';
+export type PostStatus = 'OPEN' | 'CLOSED' | 'EXPIRED';
 
 export interface PostRequest {
   title: string;

@@ -141,7 +141,8 @@ function AdminCouponsPage() {
                 aria-label="전체 발급 수량"
                 type="number"
                 min={1}
-                value={couponForm.totalQuantity}
+                placeholder="예: 100"
+                value={couponForm.totalQuantity || ''}
                 onChange={(event) =>
                   setCouponForm((prevForm) => ({
                     ...prevForm,

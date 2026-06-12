@@ -30,6 +30,7 @@ import type {
   Member,
   PaymentRole,
   Reservation,
+  Review,
 } from '../types';
 
 const initialCancelForm: CancelReservationRequest = {
@@ -150,6 +151,7 @@ function ReservationDetailPage() {
   const [careLogImageInput, setCareLogImageInput] = useState('');
   const [reviewForm, setReviewForm] =
     useState<CreateReviewRequest>(initialReviewForm);
+  const [submittedReview, setSubmittedReview] = useState<Review | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isCreatingCareLog, setIsCreatingCareLog] = useState(false);
@@ -433,8 +435,9 @@ function ReservationDetailPage() {
       });
 
       if (result.success) {
+        setSubmittedReview(result.data);
         setReviewForm({ ...initialReviewForm, reservationId: reservation.id });
-        setActionMessage('리뷰가 등록되었습니다. 시터 상세에서 확인할 수 있습니다.');
+        setActionMessage('리뷰가 등록되었습니다.');
         return;
       }
 
@@ -944,50 +947,74 @@ function ReservationDetailPage() {
             </button>
           </form>
 
-          <form
-            className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm"
-            onSubmit={handleCreateReview}
-          >
-            <p className="text-sm font-bold text-[#E26B4A]">REVIEW</p>
-            <h2 className="mt-3 text-xl font-bold text-[#2A2622]">리뷰 작성</h2>
-            <label className="mt-5 block">
-              <span className="text-sm font-bold text-[#2A2622]">평점</span>
-              <select
-                className={`mt-2 ${inputClassName}`}
-                value={reviewForm.rating}
+          {submittedReview ? (
+            <div className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm">
+              <p className="text-sm font-bold text-[#E26B4A]">REVIEW</p>
+              <h2 className="mt-3 text-xl font-bold text-[#2A2622]">리뷰 작성 완료</h2>
+              <p className="mt-3 text-sm leading-6 text-[#6F675F]">
+                작성하신 후기는 내 후기 페이지에서 확인하거나 수정할 수 있습니다.
+              </p>
+              <div className="mt-5 rounded-2xl bg-[#FAF6F1] p-4">
+                <p className="text-lg font-black text-[#E5A13C]">
+                  {'★'.repeat(submittedReview.rating).padEnd(5, '☆')}
+                </p>
+                <p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#5E544B]">
+                  {submittedReview.reviewComment}
+                </p>
+              </div>
+              <Link
+                to="/my-reviews"
+                className="mt-5 inline-flex w-full justify-center rounded-2xl bg-[#2A2622] px-4 py-3 text-sm font-bold text-white"
+              >
+                내 후기로 이동
+              </Link>
+            </div>
+          ) : (
+            <form
+              className="rounded-2xl border border-[#E7DCD1] bg-white p-6 shadow-sm"
+              onSubmit={handleCreateReview}
+            >
+              <p className="text-sm font-bold text-[#E26B4A]">REVIEW</p>
+              <h2 className="mt-3 text-xl font-bold text-[#2A2622]">리뷰 작성</h2>
+              <label className="mt-5 block">
+                <span className="text-sm font-bold text-[#2A2622]">평점</span>
+                <select
+                  className={`mt-2 ${inputClassName}`}
+                  value={reviewForm.rating}
+                  onChange={(event) =>
+                    setReviewForm((prevForm) => ({
+                      ...prevForm,
+                      rating: Number(event.target.value),
+                    }))
+                  }
+                >
+                  {[5, 4, 3, 2, 1].map((rating) => (
+                    <option key={rating} value={rating}>
+                      {rating}점
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <textarea
+                className="mt-3 min-h-28 w-full resize-y rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm leading-6 text-[#2A2622] outline-none transition placeholder:text-[#B0A59A] focus:border-[#E26B4A] focus:ring-4 focus:ring-[#F7D8CC]"
+                placeholder="리뷰를 10자 이상 작성하세요."
+                value={reviewForm.reviewComment}
                 onChange={(event) =>
                   setReviewForm((prevForm) => ({
                     ...prevForm,
-                    rating: Number(event.target.value),
+                    reviewComment: event.target.value,
                   }))
                 }
+              />
+              <button
+                type="submit"
+                disabled={!canWriteReview || isCreatingReview}
+                className="mt-3 w-full rounded-2xl bg-[#2A2622] px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#B0A59A]"
               >
-                {[5, 4, 3, 2, 1].map((rating) => (
-                  <option key={rating} value={rating}>
-                    {rating}점
-                  </option>
-                ))}
-              </select>
-            </label>
-            <textarea
-              className="mt-3 min-h-28 w-full resize-y rounded-2xl border border-[#E7DCD1] bg-white px-4 py-3 text-sm leading-6 text-[#2A2622] outline-none transition placeholder:text-[#B0A59A] focus:border-[#E26B4A] focus:ring-4 focus:ring-[#F7D8CC]"
-              placeholder="리뷰를 10자 이상 작성하세요."
-              value={reviewForm.reviewComment}
-              onChange={(event) =>
-                setReviewForm((prevForm) => ({
-                  ...prevForm,
-                  reviewComment: event.target.value,
-                }))
-              }
-            />
-            <button
-              type="submit"
-              disabled={!canWriteReview || isCreatingReview}
-              className="mt-3 w-full rounded-2xl bg-[#2A2622] px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#B0A59A]"
-            >
-              {canWriteReview ? '리뷰 등록' : '보호자만 완료 예약에 작성 가능'}
-            </button>
-          </form>
+                {canWriteReview ? '리뷰 등록' : '보호자만 완료 예약에 작성 가능'}
+              </button>
+            </form>
+          )}
         </aside>
       </section>
     </main>

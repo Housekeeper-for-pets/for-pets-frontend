@@ -164,7 +164,11 @@ function CareRequestCreatePage() {
       return '요청할 반려동물을 1마리 이상 선택해 주세요.';
     }
 
-    if (!form.requestPrice || form.requestPrice < 5000) {
+    if (!form.requestPrice) {
+      return '요청 금액을 입력해 주세요.';
+    }
+
+    if (form.requestPrice < 5000) {
       return '요청 금액은 5,000원 이상이어야 합니다.';
     }
 

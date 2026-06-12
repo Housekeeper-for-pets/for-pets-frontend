@@ -14,10 +14,14 @@ const notificationTypeLabels: Record<NotificationType, string> = {
   PROPOSAL_ARRIVED: '새 제안',
   MATCHING_CONFIRMED: '매칭 확정',
   REQUEST_RECEIVED: '돌봄 요청',
-  PROPOSAL_WITHDRAWN: '제안 철회',
+  PROPOSAL_WITHDRAWN: '제안 자동 철회',
   PAYMENT_COMPLETED: '결제 완료',
-  RESERVATION_CANCELED: '예약 취소 완료',
+  SITTER_PROFILE_APPROVED: '시터 승인 완료',
+  RESERVATION_CANCELED: '예약 취소',
+  RESERVATION_EXPIRED: '예약 만료',
   CANCEL_REQUESTED: '예약 취소 요청',
+  REQUEST_REJECTED: '돌봄 요청 거절',
+  REQUEST_ACCEPTED: '돌봄 요청 수락',
 };
 
 const getIsRead = (notification: Notification) =>
@@ -65,12 +69,33 @@ const getReferencePath = (notification: Notification) => {
         ? `/reservations/${notification.referenceId}`
         : '/reservations';
     case 'RESERVATION_CANCELED':
+      // 예약 취소 완료 — 취소된 예약 상세에서 사유/메시지 확인
       return notification.referenceId
         ? `/reservations/${notification.referenceId}`
         : '/reservations';
-    case 'CANCEL_REQUESTED':
+    case 'RESERVATION_EXPIRED':
+      // 결제 시간 초과 만료 — 만료된 예약 상세 확인
       return notification.referenceId
         ? `/reservations/${notification.referenceId}`
+        : '/reservations';
+    case 'SITTER_PROFILE_APPROVED':
+      // 관리자 시터 승인 — 본인 시터 프로필 화면으로 이동
+      return '/my-sitter';
+    case 'CANCEL_REQUESTED':
+      // 불가피한 사유 취소 요청 — 해당 예약 상세에서 관리자 검토 안내 노출
+      return notification.referenceId
+        ? `/reservations/${notification.referenceId}`
+        : '/reservations';
+    case 'REQUEST_REJECTED':
+      // 시터가 돌봄 요청을 거절 — 보호자의 보낸 요청 탭에서 해당 요청 카드로 스크롤
+      return notification.referenceId
+        ? `/activity?tab=sent&requestId=${notification.referenceId}`
+        : '/activity?tab=sent';
+    case 'REQUEST_ACCEPTED':
+      // 시터가 돌봄 요청을 수락 → 예약 생성. 생성된 예약 상세로 이동
+      // (referenceId가 careRequestId로 내려와도 sourceId 매칭으로 reservation을 찾아 이동)
+      return notification.referenceId
+        ? `matching:${notification.referenceId}`
         : '/reservations';
     default: {
       // 알 수 없는 타입 — referenceType 기준 폴백
