@@ -3,8 +3,10 @@ import type { FormEvent } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { getMyInfo, getMyPets, getUnreadNotificationCount } from '../api';
 import { buildApiUrl } from '../api/baseUrls';
+import { getAccessToken } from '../api/tokenStorage';
 import { useAuth } from '../hooks/useAuth';
 import type { Member, Pet } from '../types';
+import { hasAdminRole, tokenHasAdminRole } from '../utils/authRole';
 import BrandLogo from './BrandLogo';
 
 const navItems = [
@@ -183,6 +185,8 @@ function AppLayout() {
       ? `${member.nickname}님의 반려동물 케어`
       : '반려동물 케어 매칭';
   const sidebarInitial = (primaryPetName ?? member?.nickname ?? 'F').slice(0, 1);
+  const hasAdminAccess =
+    hasAdminRole(member?.role) || tokenHasAdminRole(getAccessToken());
 
   return (
     <div className="min-h-screen text-[#2A2622]">
@@ -203,7 +207,7 @@ function AppLayout() {
                   {navItems
                     .filter((item) => item.group === group)
                     .filter((item) => isAuthenticated || !item.requiresAuth)
-                    .filter((item) => item.to !== '/admin' || member?.role === 'ADMIN')
+                    .filter((item) => item.to !== '/admin' || hasAdminAccess)
                     .map((item) => (
                       <NavLink
                         key={item.to}
@@ -286,7 +290,7 @@ function AppLayout() {
               <nav className="flex min-w-0 flex-1 gap-2 overflow-x-auto lg:hidden">
                 {navItems
                   .filter((item) => isAuthenticated || !item.requiresAuth)
-                  .filter((item) => item.to !== '/admin' || member?.role === 'ADMIN')
+                  .filter((item) => item.to !== '/admin' || hasAdminAccess)
                   .map((item) => (
                   <NavLink
                     key={item.to}

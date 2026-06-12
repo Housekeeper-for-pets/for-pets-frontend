@@ -20,6 +20,8 @@ import type {
   RagSearchResult,
   RecommendedSitter,
 } from '../types';
+import { getAccessToken } from '../api/tokenStorage';
+import { hasAdminRole, tokenHasAdminRole } from '../utils/authRole';
 
 type ChatRole = 'assistant' | 'user';
 
@@ -179,7 +181,7 @@ function AiSitterChatPage() {
   const sessionLabel = chatSessionId
     ? `Session: ${formatSessionId(chatSessionId)}`
     : '새 대화 세션 준비';
-  const isAdmin = memberRole === 'ADMIN';
+  const isAdmin = hasAdminRole(memberRole) || tokenHasAdminRole(getAccessToken());
 
   useEffect(() => {
     const fetchMemberRole = async () => {
