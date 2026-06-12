@@ -52,6 +52,13 @@ const sourceTypeLabels: Record<RagSearchResult['sourceType'], string> = {
   REVIEW: '보호자 리뷰',
 };
 
+const AiWorkingDots = () => (
+  <span className="relative flex h-2 w-2 shrink-0">
+    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#D96F4F] opacity-60" />
+    <span className="relative inline-flex h-2 w-2 rounded-full bg-[#D96F4F]" />
+  </span>
+);
+
 const buildScheduleSummary = (sitter: RecommendedSitter) => {
   if (!sitter.schedules.length) return '등록된 가능 시간이 없습니다.';
 
@@ -438,10 +445,7 @@ function AiSitterChatPage() {
 
                 {chatMessage.role === 'assistant' && chatMessage.isStreaming && (
                   <div className="mt-3 flex items-center gap-2 text-xs font-black text-[#B85B3D]">
-                    <span className="relative flex h-2 w-2">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#D96F4F] opacity-60" />
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-[#D96F4F]" />
-                    </span>
+                    <AiWorkingDots />
                     AI가 답변을 실시간으로 작성 중입니다...
                   </div>
                 )}
@@ -449,7 +453,8 @@ function AiSitterChatPage() {
             ))}
 
             {isSending && (
-              <div className="inline-flex rounded-2xl bg-[#F6EFE7] px-4 py-3 text-sm font-black text-[#8C8075]">
+              <div className="inline-flex items-center gap-2 rounded-2xl bg-[#F6EFE7] px-4 py-3 text-sm font-black text-[#8C8075]">
+                <AiWorkingDots />
                 {pendingMessage || '추천 결과와 리뷰 요약을 함께 확인하는 중...'}
               </div>
             )}
