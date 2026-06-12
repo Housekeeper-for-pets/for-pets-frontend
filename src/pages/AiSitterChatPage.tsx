@@ -385,7 +385,7 @@ function AiSitterChatPage() {
     if (isIndexingRag) return;
 
     setIsIndexingRag(true);
-    setRagIndexMessage('');
+    setRagIndexMessage('리뷰 데이터를 인덱싱하고 있습니다. 최대 1분 정도 걸릴 수 있어요.');
 
     try {
       const result = await indexAiReviewSources();
@@ -398,7 +398,7 @@ function AiSitterChatPage() {
 
       setRagIndexMessage(result.error?.message ?? 'RAG 인덱싱에 실패했습니다.');
     } catch {
-      setRagIndexMessage('RAG 인덱싱 요청 중 문제가 발생했습니다.');
+      setRagIndexMessage('RAG 인덱싱 요청이 완료되지 않았습니다. 잠시 후 다시 시도해주세요.');
     } finally {
       setIsIndexingRag(false);
     }

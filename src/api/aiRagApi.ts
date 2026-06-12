@@ -18,6 +18,10 @@ export const searchAiReviewSources = async (request: RagSearchRequest) => {
 export const indexAiReviewSources = async () => {
   const response = await axiosInstance.post<ApiResponse<RagIndexResponse>>(
     '/ai/rag/reviews/index',
+    undefined,
+    {
+      timeout: 60000,
+    },
   );
 
   return response.data;
