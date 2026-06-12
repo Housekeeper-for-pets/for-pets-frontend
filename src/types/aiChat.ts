@@ -33,6 +33,7 @@ export interface RagSearchResponse {
 
 export interface RagIndexResponse {
   indexedCount: number;
+  failedCount: number;
 }
 
 export interface RecommendedSitter {

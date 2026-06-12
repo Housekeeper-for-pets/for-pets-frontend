@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { getSitterReviewSummary, streamAiChatMessage } from '../api';
+import {
+  getMyInfo,
+  getSitterReviewSummary,
+  indexAiReviewSources,
+  streamAiChatMessage,
+} from '../api';
 import {
   dayOfWeekLabels,
   getRegionLabel,
@@ -9,7 +14,12 @@ import {
   possiblePetTypeLabels,
   sitterStatusLabels,
 } from '../constants/options';
-import type { RagSearchResult, RecommendedSitter } from '../types';
+import type {
+  MemberRole,
+  RagIndexResponse,
+  RagSearchResult,
+  RecommendedSitter,
+} from '../types';
 
 type ChatRole = 'assistant' | 'user';
 
@@ -121,9 +131,13 @@ function AiSitterChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [message, setMessage] = useState('');
   const [chatSessionId, setChatSessionId] = useState<string | null>(null);
+  const [memberRole, setMemberRole] = useState<MemberRole | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [isIndexingRag, setIsIndexingRag] = useState(false);
   const [pendingMessage, setPendingMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [ragIndexResult, setRagIndexResult] = useState<RagIndexResponse | null>(null);
+  const [ragIndexMessage, setRagIndexMessage] = useState('');
   const [currentRecommendationIndex, setCurrentRecommendationIndex] = useState(0);
   const [areSuggestionsOpen, setAreSuggestionsOpen] = useState(true);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -165,6 +179,19 @@ function AiSitterChatPage() {
   const sessionLabel = chatSessionId
     ? `Session: ${formatSessionId(chatSessionId)}`
     : '새 대화 세션 준비';
+  const isAdmin = memberRole === 'ADMIN';
+
+  useEffect(() => {
+    const fetchMemberRole = async () => {
+      const result = await getMyInfo();
+
+      if (result.success) {
+        setMemberRole(result.data.role);
+      }
+    };
+
+    void fetchMemberRole();
+  }, []);
 
   useEffect(() => {
     setCurrentRecommendationIndex(0);
@@ -352,6 +379,29 @@ function AiSitterChatPage() {
     void sendMessage(message);
   };
 
+  const handleRagIndex = async () => {
+    if (isIndexingRag) return;
+
+    setIsIndexingRag(true);
+    setRagIndexMessage('');
+
+    try {
+      const result = await indexAiReviewSources();
+
+      if (result.success) {
+        setRagIndexResult(result.data);
+        setRagIndexMessage('RAG 리뷰 인덱싱이 완료되었습니다.');
+        return;
+      }
+
+      setRagIndexMessage(result.error?.message ?? 'RAG 인덱싱에 실패했습니다.');
+    } catch {
+      setRagIndexMessage('RAG 인덱싱 요청 중 문제가 발생했습니다.');
+    } finally {
+      setIsIndexingRag(false);
+    }
+  };
+
   return (
     <main className="mx-auto max-w-7xl px-5 py-5 lg:px-8">
       <section className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
@@ -376,6 +426,29 @@ function AiSitterChatPage() {
             <span className="rounded-full bg-[#FFF0EA] px-3 py-1.5 text-xs font-black text-[#B85B3D]">
               실시간 스트리밍 중
             </span>
+          )}
+          {isAdmin && (
+            <>
+              <button
+                type="button"
+                className="rounded-full bg-[#2A2622] px-3 py-1.5 text-xs font-black text-white shadow-sm transition hover:bg-[#3C342E] disabled:cursor-not-allowed disabled:bg-[#B0A59A]"
+                onClick={() => void handleRagIndex()}
+                disabled={isIndexingRag}
+              >
+                {isIndexingRag ? 'RAG 인덱싱 중...' : 'RAG 인덱싱'}
+              </button>
+              {ragIndexResult && (
+                <span className="rounded-full border border-[#E7DCD1] bg-white px-3 py-1.5 text-xs font-black text-[#6F675F] shadow-sm">
+                  성공 {ragIndexResult.indexedCount}건 · 실패{' '}
+                  {ragIndexResult.failedCount}건
+                </span>
+              )}
+              {ragIndexMessage && (
+                <span className="rounded-full bg-[#F6EFE7] px-3 py-1.5 text-xs font-black text-[#8C8075]">
+                  {ragIndexMessage}
+                </span>
+              )}
+            </>
           )}
         </div>
         <Link

@@ -195,7 +195,7 @@ function AppLayout() {
             </span>
           </div>
 
-          <nav className="mt-9 space-y-7">
+          <nav className="mt-9 min-h-0 flex-1 space-y-7 overflow-y-auto pr-1 pb-4">
             {navGroups.map((group) => (
               <div key={group}>
                 <p className="px-3 text-[11px] font-bold text-[#B7AA9D]">{group}</p>
@@ -236,7 +236,7 @@ function AppLayout() {
             ))}
           </nav>
 
-          <div className="mt-auto rounded-2xl bg-[#F6EFE7] p-4">
+          <div className="mt-4 shrink-0 rounded-2xl bg-[#F6EFE7] p-4">
             <div className="flex items-center gap-3">
               <span className="grid h-9 w-9 place-items-center rounded-full bg-[#F2D9CC] text-xs font-black text-[#B85B3D]">
                 {sidebarInitial}
