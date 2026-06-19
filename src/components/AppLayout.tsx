@@ -57,6 +57,37 @@ const notificationEventTypes = [
   'REQUEST_ACCEPTED',
 ];
 
+const notificationEventTypeSet = new Set(notificationEventTypes);
+
+interface SseEvent {
+  event: string;
+  data: string;
+}
+
+const parseSseEvent = (rawEvent: string): SseEvent | null => {
+  if (!rawEvent.trim()) return null;
+
+  const lines = rawEvent.split('\n');
+  let event = 'message';
+  const dataLines: string[] = [];
+
+  lines.forEach((line) => {
+    if (line.startsWith('event:')) {
+      event = line.slice('event:'.length).trim();
+      return;
+    }
+
+    if (line.startsWith('data:')) {
+      dataLines.push(line.slice('data:'.length).replace(/^ /, ''));
+    }
+  });
+
+  return {
+    event,
+    data: dataLines.join('\n'),
+  };
+};
+
 function NavIcon({ name }: { name: NavIconName }) {
   return (
     <svg
@@ -112,19 +143,17 @@ function AppLayout() {
   useEffect(() => {
     if (!member || !isAuthenticated) return;
 
+    let isMounted = true;
+    const abortController = new AbortController();
+
     const fetchUnreadCount = async () => {
       const result = await getUnreadNotificationCount(member.id);
 
-      if (result.success) {
+      if (isMounted && result.success) {
         setUnreadNotificationCount(result.data.count);
       }
     };
 
-    void fetchUnreadCount();
-
-    const eventSource = new EventSource(
-      buildApiUrl(`/notifications/stream?userId=${member.id}`),
-    );
     const handleServerNotification = () => {
       void fetchUnreadCount();
       window.dispatchEvent(new CustomEvent('forpets:notification'));
@@ -133,23 +162,67 @@ function AppLayout() {
       void fetchUnreadCount();
     };
 
-    notificationEventTypes.forEach((eventType) => {
-      eventSource.addEventListener(eventType, handleServerNotification);
-    });
-    window.addEventListener('forpets:notification-refresh', handleNotificationRefresh);
-    eventSource.onerror = () => {
-      eventSource.close();
+    const connectNotificationStream = async () => {
+      const accessToken = getAccessToken();
+
+      if (!accessToken) return;
+
+      try {
+        const response = await fetch(
+          buildApiUrl(`/notifications/stream?userId=${member.id}`),
+          {
+            headers: {
+              Accept: 'text/event-stream',
+              Authorization: `Bearer ${accessToken}`,
+            },
+            signal: abortController.signal,
+          },
+        );
+
+        if (!response.ok || !response.body) {
+          return;
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (isMounted) {
+          const { done, value } = await reader.read();
+
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
+
+          while (buffer.includes('\n\n')) {
+            const separatorIndex = buffer.indexOf('\n\n');
+            const rawEvent = buffer.slice(0, separatorIndex);
+            buffer = buffer.slice(separatorIndex + 2);
+            const sseEvent = parseSseEvent(rawEvent);
+
+            if (sseEvent && notificationEventTypeSet.has(sseEvent.event)) {
+              handleServerNotification();
+            }
+          }
+        }
+      } catch (error) {
+        if (!abortController.signal.aborted) {
+          console.error('Notification stream connection failed.', error);
+        }
+      }
     };
 
+    void fetchUnreadCount();
+    void connectNotificationStream();
+    window.addEventListener('forpets:notification-refresh', handleNotificationRefresh);
+
     return () => {
-      notificationEventTypes.forEach((eventType) => {
-        eventSource.removeEventListener(eventType, handleServerNotification);
-      });
+      isMounted = false;
+      abortController.abort();
       window.removeEventListener(
         'forpets:notification-refresh',
         handleNotificationRefresh,
       );
-      eventSource.close();
     };
   }, [isAuthenticated, member?.id]);
 
